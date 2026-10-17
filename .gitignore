@@ -3,6 +3,7 @@
 !.env.example
 CLAUDE.md
 BranchContext.md
+Cronograma.md
 .venv/
 __pycache__/
 *.pyc
