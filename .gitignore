@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 CLAUDE.md
+BranchContext.md
 .venv/
 __pycache__/
 *.pyc
