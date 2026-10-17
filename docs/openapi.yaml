@@ -1,0 +1,646 @@
+openapi: 3.0.3
+info:
+  title: cvexpert-ms-cvs
+  version: "1.0.0"
+  description: >
+    Contrato de Fase II del microservicio de CVs de CVExpert. Fuente de verdad
+    para web y Android. Las rutas del servicio son /cvs y /templates; el
+    prefijo que agregue APIM en producción no afecta estas rutas.
+
+
+    Identidad: llega únicamente por los encabezados que inyecta APIM
+    (X-User-Id, X-User-Email). Si faltan, 401. El servicio nunca lee
+    identidad de un token ni del body; si el body trae userId, se ignora.
+
+
+    Fechas: todas epoch en milisegundos UTC (entero). Las fechas sin hora
+    (solo mes o solo día) se guardan al día 1 a las 12:00 UTC para que no
+    cambien de mes en zonas horarias negativas (ej. Costa Rica, UTC-6).
+
+servers:
+  - url: /
+
+tags:
+  - name: cvs
+  - name: templates
+  - name: ai
+
+paths:
+  /cvs:
+    get:
+      tags: [cvs]
+      summary: Lista los CVs del usuario autenticado
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: search
+          in: query
+          required: false
+          description: Filtra por title
+          schema:
+            type: string
+      responses:
+        "200":
+          description: CVs del usuario, paginados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedCvs"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [cvs]
+      summary: Crea un CV para el usuario autenticado
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CvInput"
+      responses:
+        "201":
+          description: CV creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /cvs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - $ref: "#/components/parameters/XUserId"
+      - $ref: "#/components/parameters/XUserEmail"
+    get:
+      tags: [cvs]
+      summary: Obtiene un CV del usuario autenticado
+      responses:
+        "200":
+          description: CV encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [cvs]
+      summary: Reemplaza el CV completo (el cliente manda todas las secciones)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CvInput"
+      responses:
+        "200":
+          description: CV actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [cvs]
+      summary: Elimina un CV del usuario autenticado
+      responses:
+        "204":
+          description: Eliminado
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /templates:
+    get:
+      tags: [templates]
+      summary: Catálogo de plantillas (solo lectura)
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - name: search
+          in: query
+          required: false
+          description: Filtra por name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Plantillas disponibles, paginadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedTemplates"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /cvs/ai/expand-experience:
+    post:
+      tags: [ai]
+      summary: Expande la descripción de una experiencia laboral con IA
+      description: Sin estado; no requiere que el CV esté guardado.
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpandExperienceRequest"
+      responses:
+        "200":
+          description: Descripción expandida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExpandExperienceResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /cvs/ai/translate-experience:
+    post:
+      tags: [ai]
+      summary: Traduce una experiencia no laboral con IA
+      description: Sin estado; no requiere que el CV esté guardado.
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslateExperienceRequest"
+      responses:
+        "200":
+          description: Experiencia traducida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslateExperienceResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  parameters:
+    XUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: Inyectado por APIM. Si falta, 401.
+      schema:
+        type: string
+    XUserEmail:
+      name: X-User-Email
+      in: header
+      required: true
+      description: Inyectado por APIM. Si falta, 401.
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+
+  responses:
+    Unauthorized:
+      description: Falta X-User-Id o X-User-Email
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadRequest:
+      description: Body inválido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: No existe o no pertenece al usuario autenticado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    EpochMillis:
+      type: integer
+      format: int64
+      description: Epoch en milisegundos UTC.
+
+    Error:
+      type: object
+      required: [statusCode, error, message]
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+          description: Mensaje en español, es el único campo que lee la web.
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+          description: Solo en 400, mapa campo -> mensaje.
+
+    EmploymentType:
+      type: string
+      enum: [full-time, part-time, freelance, internship]
+    Modality:
+      type: string
+      enum: [remote, on-site, hybrid]
+    WorkExperienceType:
+      type: string
+      description: >
+        Distingue experiencia laboral formal de experiencia no laboral.
+        No existe una lista separada para experiencia no laboral.
+      enum: [formal, freelance, volunteer, school-project, informal]
+    NonLaborExperienceType:
+      type: string
+      description: Subconjunto de WorkExperienceType que es experiencia no laboral.
+      enum: [volunteer, school-project, informal]
+    SkillLevel:
+      type: string
+      enum: [beginner, intermediate, advanced, expert]
+    LanguageLevel:
+      type: string
+      enum: [basic, intermediate, advanced, native]
+
+    PersonalInfo:
+      type: object
+      description: >
+        Misma forma que el perfil de usuario. additionalProperties no se
+        restringe: Android manda el perfil completo dentro del CV y el
+        servidor ignora lo que no reconoce.
+      required: [fullName, email]
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        photoUrl:
+          type: string
+        bio:
+          type: string
+          description: "\"Sobre mí\"."
+        birthDate:
+          $ref: "#/components/schemas/EpochMillis"
+        types:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmploymentType"
+        modalities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Modality"
+        sectors:
+          type: array
+          items:
+            type: string
+
+    WorkExperience:
+      type: object
+      required: [id, company, position, startDate, current, description, type]
+      properties:
+        id:
+          type: string
+        company:
+          type: string
+        position:
+          type: string
+        startDate:
+          $ref: "#/components/schemas/EpochMillis"
+        endDate:
+          allOf:
+            - $ref: "#/components/schemas/EpochMillis"
+          nullable: true
+        current:
+          type: boolean
+        description:
+          type: string
+        type:
+          $ref: "#/components/schemas/WorkExperienceType"
+    WorkExperienceInput:
+      allOf:
+        - $ref: "#/components/schemas/WorkExperience"
+      description: id es opcional; el servidor lo genera si falta.
+
+    Education:
+      type: object
+      required: [id, institution, degree, field, startDate, current]
+      properties:
+        id:
+          type: string
+        institution:
+          type: string
+        degree:
+          type: string
+        field:
+          type: string
+        startDate:
+          $ref: "#/components/schemas/EpochMillis"
+        endDate:
+          allOf:
+            - $ref: "#/components/schemas/EpochMillis"
+          nullable: true
+        current:
+          type: boolean
+    EducationInput:
+      allOf:
+        - $ref: "#/components/schemas/Education"
+      description: id es opcional; el servidor lo genera si falta.
+
+    Skill:
+      type: object
+      required: [id, name, level, category]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          $ref: "#/components/schemas/SkillLevel"
+        category:
+          type: string
+          description: Texto libre. Las habilidades blandas son skills normales.
+    SkillInput:
+      allOf:
+        - $ref: "#/components/schemas/Skill"
+      description: id es opcional; el servidor lo genera si falta.
+
+    Language:
+      type: object
+      required: [id, name, level]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          $ref: "#/components/schemas/LanguageLevel"
+    LanguageInput:
+      allOf:
+        - $ref: "#/components/schemas/Language"
+      description: id es opcional; el servidor lo genera si falta.
+
+    Certification:
+      type: object
+      description: Aditivo opcional de Fase II.
+      required: [id, name, issuer]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        issuer:
+          type: string
+        issuedAt:
+          $ref: "#/components/schemas/EpochMillis"
+        expiresAt:
+          allOf:
+            - $ref: "#/components/schemas/EpochMillis"
+          nullable: true
+        credentialUrl:
+          type: string
+    CertificationInput:
+      allOf:
+        - $ref: "#/components/schemas/Certification"
+      description: id es opcional; el servidor lo genera si falta.
+
+    Cv:
+      type: object
+      required:
+        - id
+        - userId
+        - title
+        - templateId
+        - createdAt
+        - updatedAt
+        - personalInfo
+        - workExperiences
+        - education
+        - skills
+        - languages
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+          description: Sale de X-User-Id. Si el body trae otro valor, se ignora.
+        title:
+          type: string
+        templateId:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+          description: El servidor lo copia del previewUrl de la plantilla elegida.
+        createdAt:
+          $ref: "#/components/schemas/EpochMillis"
+        updatedAt:
+          $ref: "#/components/schemas/EpochMillis"
+        personalInfo:
+          $ref: "#/components/schemas/PersonalInfo"
+        workExperiences:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkExperience"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/Education"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/Skill"
+        languages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Language"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/Certification"
+
+    CvInput:
+      type: object
+      description: >
+        Body de creación (POST) y de reemplazo completo (PUT). No incluye
+        id, userId, createdAt, updatedAt, ni thumbnailUrl: los pone el
+        servidor. En el PUT, Android no manda userId.
+      required:
+        - title
+        - templateId
+        - personalInfo
+        - workExperiences
+        - education
+        - skills
+        - languages
+      properties:
+        title:
+          type: string
+        templateId:
+          type: string
+        personalInfo:
+          $ref: "#/components/schemas/PersonalInfo"
+        workExperiences:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkExperienceInput"
+        education:
+          type: array
+          items:
+            $ref: "#/components/schemas/EducationInput"
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillInput"
+        languages:
+          type: array
+          items:
+            $ref: "#/components/schemas/LanguageInput"
+        certifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/CertificationInput"
+
+    Template:
+      type: object
+      required: [id, name, description, previewUrl, category, isPremium, availableOffline]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        previewUrl:
+          type: string
+        category:
+          type: string
+        isPremium:
+          type: boolean
+        availableOffline:
+          type: boolean
+
+    PaginatedCvs:
+      type: object
+      required: [items, page, pageSize, totalRecords]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Cv"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalRecords:
+          type: integer
+
+    PaginatedTemplates:
+      type: object
+      required: [items, page, pageSize, totalRecords]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Template"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalRecords:
+          type: integer
+
+    ExpandExperienceRequest:
+      type: object
+      required: [company, position, description, type, language]
+      properties:
+        company:
+          type: string
+        position:
+          type: string
+        description:
+          type: string
+        type:
+          $ref: "#/components/schemas/WorkExperienceType"
+        language:
+          type: string
+          enum: [es, en]
+    ExpandExperienceResponse:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+
+    TranslateExperienceRequest:
+      type: object
+      required: [type, position, description, language]
+      properties:
+        type:
+          $ref: "#/components/schemas/NonLaborExperienceType"
+        position:
+          type: string
+        organization:
+          type: string
+        description:
+          type: string
+        language:
+          type: string
+          enum: [es, en]
+    TranslateExperienceResponse:
+      type: object
+      required: [position, description]
+      properties:
+        position:
+          type: string
+        description:
+          type: string
