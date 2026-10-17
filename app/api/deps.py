@@ -1,4 +1,6 @@
-from fastapi import Header, HTTPException, status
+from typing import Annotated
+
+from fastapi import Depends, Header, HTTPException, status
 
 from app.domain.models import CurrentUser
 
@@ -11,6 +13,9 @@ def get_current_user(
     if not x_user_id or not x_user_email:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identidad no provista por APIM")
     return CurrentUser(user_id=x_user_id, email=x_user_email, role=x_user_role)
+
+
+CurrentUserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 
 def require_admin(user: CurrentUser) -> CurrentUser:
