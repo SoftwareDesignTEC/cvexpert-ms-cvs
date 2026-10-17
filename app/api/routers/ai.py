@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.api.deps import get_current_user
-from app.domain.models import CurrentUser
+from app.api.deps import CurrentUserDep
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 
 @router.post("/expand-experience")
-def expand_experience(user: CurrentUser = Depends(get_current_user)):
+def expand_experience(user: CurrentUserDep):
     raise NotImplementedError
 
 
 @router.post("/translate-experience")
-def translate_experience(user: CurrentUser = Depends(get_current_user)):
+def translate_experience(user: CurrentUserDep):
     raise NotImplementedError
