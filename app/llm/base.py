@@ -8,6 +8,22 @@ class TranslatedExperience:
     description: str
 
 
+class LLMError(Exception):
+    """Error genérico del adaptador LLM, sin detalles internos del proveedor."""
+
+
+class LLMTimeoutError(LLMError):
+    pass
+
+
+class LLMRateLimitError(LLMError):
+    pass
+
+
+class LLMProviderError(LLMError):
+    pass
+
+
 class LLMAdapter(ABC):
     @abstractmethod
     async def expand_experience(
