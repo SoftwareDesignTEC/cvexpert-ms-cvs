@@ -4,3 +4,4 @@ gunicorn
 motor
 pydantic
 pydantic-settings
+httpx
