@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     mongodb_db: str = "cvexpert"
 
     llm_provider: str = "none"
-    llm_api_key: str | None = None
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-3.5-flash-lite"
 
 
 settings = Settings()
