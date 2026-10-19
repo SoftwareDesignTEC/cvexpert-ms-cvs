@@ -1,3 +1,6 @@
+from typing import Annotated
+
+from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from app.config import settings
@@ -14,3 +17,6 @@ def get_client() -> AsyncIOMotorClient:
 
 def get_database() -> AsyncIOMotorDatabase:
     return get_client()[settings.mongodb_db]
+
+
+DatabaseDep = Annotated[AsyncIOMotorDatabase, Depends(get_database)]
