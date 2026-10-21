@@ -113,3 +113,39 @@ class PaginatedCvs(BaseModel):
     page: int
     pageSize: int
     totalRecords: int
+
+
+class Error(BaseModel):
+    statusCode: int
+    error: str
+    message: str
+    errors: dict[str, str] | None = None
+
+
+NonLaborExperienceType = Literal["volunteer", "school-project", "informal"]
+ResponseLanguage = Literal["es", "en"]
+
+
+class ExpandExperienceRequest(BaseModel):
+    company: str
+    position: str
+    description: str
+    type: WorkExperienceType
+    language: ResponseLanguage
+
+
+class ExpandExperienceResponse(BaseModel):
+    description: str
+
+
+class TranslateExperienceRequest(BaseModel):
+    type: NonLaborExperienceType
+    position: str
+    organization: str | None = None
+    description: str
+    language: ResponseLanguage
+
+
+class TranslateExperienceResponse(BaseModel):
+    position: str
+    description: str
