@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CurrentUser(BaseModel):
@@ -19,6 +21,95 @@ class Template(BaseModel):
 
 class PaginatedTemplates(BaseModel):
     items: list[Template]
+    page: int
+    pageSize: int
+    totalRecords: int
+
+
+EmploymentType = Literal["full-time", "part-time", "freelance", "internship"]
+Modality = Literal["remote", "on-site", "hybrid"]
+WorkExperienceType = Literal["formal", "freelance", "volunteer", "school-project", "informal"]
+SkillLevel = Literal["beginner", "intermediate", "advanced", "expert"]
+LanguageLevel = Literal["basic", "intermediate", "advanced", "native"]
+
+
+class PersonalInfo(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    id: str | None = None
+    fullName: str
+    email: str
+    phone: str | None = None
+    address: str | None = None
+    photoUrl: str | None = None
+    bio: str | None = None
+    birthDate: int | None = None
+    types: list[EmploymentType] = Field(default_factory=list)
+    modalities: list[Modality] = Field(default_factory=list)
+    sectors: list[str] = Field(default_factory=list)
+
+
+class WorkExperience(BaseModel):
+    id: str
+    company: str
+    position: str
+    startDate: int
+    endDate: int | None = None
+    current: bool
+    description: str
+    type: WorkExperienceType
+
+
+class Education(BaseModel):
+    id: str
+    institution: str
+    degree: str
+    field: str
+    startDate: int
+    endDate: int | None = None
+    current: bool
+
+
+class Skill(BaseModel):
+    id: str
+    name: str
+    level: SkillLevel
+    category: str
+
+
+class Language(BaseModel):
+    id: str
+    name: str
+    level: LanguageLevel
+
+
+class Certification(BaseModel):
+    id: str
+    name: str
+    issuer: str
+    issuedAt: int | None = None
+    expiresAt: int | None = None
+    credentialUrl: str | None = None
+
+
+class Cv(BaseModel):
+    id: str
+    userId: str
+    title: str
+    templateId: str
+    thumbnailUrl: str | None = None
+    createdAt: int
+    updatedAt: int
+    personalInfo: PersonalInfo
+    workExperiences: list[WorkExperience] = Field(default_factory=list)
+    education: list[Education] = Field(default_factory=list)
+    skills: list[Skill] = Field(default_factory=list)
+    languages: list[Language] = Field(default_factory=list)
+    certifications: list[Certification] = Field(default_factory=list)
+
+
+class PaginatedCvs(BaseModel):
+    items: list[Cv]
     page: int
     pageSize: int
     totalRecords: int

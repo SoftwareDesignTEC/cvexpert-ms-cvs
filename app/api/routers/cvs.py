@@ -1,13 +1,22 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUserDep
+from app.domain.models import PaginatedCvs
+from app.repositories.mongo import DatabaseDep
+from app.services.cvs import list_cvs
 
 router = APIRouter(prefix="/cvs", tags=["cvs"])
 
 
-@router.get("")
-def list_cvs(user: CurrentUserDep):
-    raise NotImplementedError
+@router.get("", response_model=PaginatedCvs)
+async def get_cvs(
+    user: CurrentUserDep,
+    db: DatabaseDep,
+    page: int = Query(default=1, ge=1),
+    pageSize: int = Query(default=20, ge=1),
+    search: str | None = Query(default=None),
+):
+    return await list_cvs(db, user_id=user.user_id, page=page, page_size=pageSize, search=search)
 
 
 @router.post("")
