@@ -50,7 +50,7 @@ class PersonalInfo(BaseModel):
 
 
 class WorkExperience(BaseModel):
-    id: str
+    id: str | None = None
     company: str
     position: str
     startDate: int
@@ -61,7 +61,7 @@ class WorkExperience(BaseModel):
 
 
 class Education(BaseModel):
-    id: str
+    id: str | None = None
     institution: str
     degree: str
     field: str
@@ -71,20 +71,20 @@ class Education(BaseModel):
 
 
 class Skill(BaseModel):
-    id: str
+    id: str | None = None
     name: str
     level: SkillLevel
     category: str
 
 
 class Language(BaseModel):
-    id: str
+    id: str | None = None
     name: str
     level: LanguageLevel
 
 
 class Certification(BaseModel):
-    id: str
+    id: str | None = None
     name: str
     issuer: str
     issuedAt: int | None = None
@@ -113,6 +113,17 @@ class PaginatedCvs(BaseModel):
     page: int
     pageSize: int
     totalRecords: int
+
+
+class CvInput(BaseModel):
+    title: str
+    templateId: str
+    personalInfo: PersonalInfo
+    workExperiences: list[WorkExperience] = Field(default_factory=list)
+    education: list[Education] = Field(default_factory=list)
+    skills: list[Skill] = Field(default_factory=list)
+    languages: list[Language] = Field(default_factory=list)
+    certifications: list[Certification] = Field(default_factory=list)
 
 
 class Error(BaseModel):

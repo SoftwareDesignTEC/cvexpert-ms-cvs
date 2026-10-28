@@ -16,3 +16,7 @@ async def find_templates(
     cursor = collection.find(query).skip(skip).limit(page_size)
     items = [doc async for doc in cursor]
     return items, total
+
+
+async def find_template_by_id(db: AsyncIOMotorDatabase, *, template_id: str) -> dict | None:
+    return await db[COLLECTION_NAME].find_one({"id": template_id})
