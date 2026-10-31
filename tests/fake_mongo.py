@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 
 
 class FakeCursor:
@@ -33,6 +34,21 @@ def _matches(doc: dict, query: dict) -> bool:
     return True
 
 
+@dataclass
+class FakeInsertResult:
+    inserted_id: object
+
+
+@dataclass
+class FakeUpdateResult:
+    matched_count: int
+
+
+@dataclass
+class FakeDeleteResult:
+    deleted_count: int
+
+
 class FakeCollection:
     def __init__(self, docs: list[dict]):
         self._docs = docs
@@ -43,6 +59,30 @@ class FakeCollection:
 
     async def count_documents(self, query: dict | None = None) -> int:
         return len([doc for doc in self._docs if _matches(doc, query or {})])
+
+    async def find_one(self, query: dict | None = None) -> dict | None:
+        for doc in self._docs:
+            if _matches(doc, query or {}):
+                return doc
+        return None
+
+    async def insert_one(self, doc: dict) -> FakeInsertResult:
+        self._docs.append(doc)
+        return FakeInsertResult(inserted_id=doc.get("id"))
+
+    async def replace_one(self, query: dict, doc: dict) -> FakeUpdateResult:
+        for i, existing in enumerate(self._docs):
+            if _matches(existing, query):
+                self._docs[i] = doc
+                return FakeUpdateResult(matched_count=1)
+        return FakeUpdateResult(matched_count=0)
+
+    async def delete_one(self, query: dict) -> FakeDeleteResult:
+        for i, doc in enumerate(self._docs):
+            if _matches(doc, query):
+                del self._docs[i]
+                return FakeDeleteResult(deleted_count=1)
+        return FakeDeleteResult(deleted_count=0)
 
 
 class FakeDatabase:
