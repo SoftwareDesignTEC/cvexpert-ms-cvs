@@ -31,7 +31,8 @@ AUTH_HEADERS = {"X-User-Id": "u1", "X-User-Email": "a@b.com"}
 
 @pytest.fixture
 def client():
-    app.dependency_overrides[get_database] = lambda: FakeDatabase({"templates": TEMPLATES})
+    db = FakeDatabase({"templates": [dict(t) for t in TEMPLATES]})
+    app.dependency_overrides[get_database] = lambda: db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.pop(get_database, None)

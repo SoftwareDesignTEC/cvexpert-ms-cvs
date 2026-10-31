@@ -58,9 +58,8 @@ CV_INPUT_BODY = {
 
 @pytest.fixture
 def client():
-    app.dependency_overrides[get_database] = lambda: FakeDatabase(
-        {"cvs": [dict(cv) for cv in CVS], "templates": [dict(t) for t in TEMPLATES]}
-    )
+    db = FakeDatabase({"cvs": [dict(cv) for cv in CVS], "templates": [dict(t) for t in TEMPLATES]})
+    app.dependency_overrides[get_database] = lambda: db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.pop(get_database, None)
