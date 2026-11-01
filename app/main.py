@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Request
+from http.client import responses as http_status_phrases
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -46,6 +48,12 @@ async def handle_llm_provider_error(request: Request, exc: LLMProviderError) -> 
 @app.exception_handler(LLMError)
 async def handle_llm_error(request: Request, exc: LLMError) -> JSONResponse:
     return _error_response(502, "BadGateway", "El servicio de IA no está disponible en este momento.")
+
+
+@app.exception_handler(HTTPException)
+async def handle_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
+    error = http_status_phrases.get(exc.status_code, "Error").replace(" ", "")
+    return _error_response(exc.status_code, error, str(exc.detail))
 
 
 @app.exception_handler(NotFoundError)
