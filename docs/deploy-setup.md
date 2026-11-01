@@ -1,13 +1,13 @@
 # Configurar el deploy (una sola vez)
 
+**Hecho el 1 nov por Cabrera.** Queda documentado acá para referencia (p. ej.
+si hay que recrearlo o entender el scope de permisos).
+
 El workflow `.github/workflows/cd.yml` despliega a Azure App Service usando OIDC
 (sin publish profile, porque la autenticación básica/SCM está deshabilitada en
-`cvexpert-ms-cvs`). Esto requiere un Azure AD App Registration con un
-federated credential que confíe en GitHub Actions para este repo y la rama
-`main`. Nadie corrió esto todavía — hace falta ejecutarlo una vez con permisos
-suficientes (Contributor sobre `rg-cvexpert` + poder crear App Registrations
-en Azure AD; si falla el primer `az ad app create` por permisos, lo tiene que
-correr Cabrera).
+`cvexpert-ms-cvs`). Esto requiere un Azure AD App Registration
+(`gh-actions-cvexpert-ms-cvs`) con federated credentials que confíen en
+GitHub Actions para este repo.
 
 ```bash
 # 1. Crear el App Registration
@@ -20,17 +20,26 @@ SUBSCRIPTION_ID="<subscription id de rg-cvexpert>"
 # 2. Crear el Service Principal asociado
 az ad sp create --id "$APP_ID"
 
-# 3. Darle rol de Website Contributor sobre el resource group (no Contributor completo)
+# 3. Darle rol de Website Contributor solo sobre cvexpert-ms-cvs (no sobre todo
+# el resource group), para que el pipeline no pueda tocar los otros App Services
 az role assignment create \
   --assignee "$APP_ID" \
   --role "Website Contributor" \
-  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-cvexpert"
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/rg-cvexpert/providers/Microsoft.Web/sites/cvexpert-ms-cvs"
 
-# 4. Federated credential: confía en GitHub Actions solo para push a main de este repo
+# 4. Federated credentials: cd.yml usa `environment: production`, así que el
+# subject del token de GitHub es el del environment, no el de push a main —
+# hacen falta las dos.
 az ad app federated-credential create --id "$APP_ID" --parameters '{
   "name": "github-main-deploy",
   "issuer": "https://token.actions.githubusercontent.com",
   "subject": "repo:SoftwareDesignTEC/cvexpert-ms-cvs:ref:refs/heads/main",
+  "audiences": ["api://AzureADTokenExchange"]
+}'
+az ad app federated-credential create --id "$APP_ID" --parameters '{
+  "name": "github-production-environment",
+  "issuer": "https://token.actions.githubusercontent.com",
+  "subject": "repo:SoftwareDesignTEC/cvexpert-ms-cvs:environment:production",
   "audiences": ["api://AzureADTokenExchange"]
 }'
 
@@ -39,15 +48,16 @@ echo "AZURE_CLIENT_ID=$APP_ID"
 az account show --query "{AZURE_TENANT_ID:tenantId, AZURE_SUBSCRIPTION_ID:id}" -o json
 ```
 
-Después, en GitHub (`Settings > Secrets and variables > Actions`), crear:
+En GitHub (`Settings > Secrets and variables > Actions`) ya están cargados:
 
 - `AZURE_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 
 Ninguno de los tres es secreto en el sentido tradicional (son IDs, no
-contraseñas) — la seguridad real está en el federated credential, que solo
-confía en tokens de GitHub Actions para `push` a `main` en este repo exacto.
+contraseñas) — la seguridad real está en los federated credentials, que solo
+confían en tokens de GitHub Actions para este repo exacto (push a `main`, o
+el environment `production`).
 
 ## Qué hace el pipeline
 
