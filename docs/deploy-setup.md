@@ -36,10 +36,17 @@ az ad app federated-credential create --id "$APP_ID" --parameters '{
   "subject": "repo:SoftwareDesignTEC/cvexpert-ms-cvs:ref:refs/heads/main",
   "audiences": ["api://AzureADTokenExchange"]
 }'
+# OJO: GitHub incluye el ID numérico del repo en el subject de los tokens de
+# "environment" (p. ej. repo:ORG/REPO@<repositoryId>:environment:NAME), no solo
+# repo:ORG/REPO:environment:NAME. Si el primer intento falla con AADSTS700213
+# ("No matching federated identity record found"), el log del job de GitHub
+# Actions muestra el subject exacto que mandó (con el @<id>) — usar ESE valor,
+# tal cual, acá abajo. Para cvexpert-ms-cvs el id es 328866100 (confirmado
+# 1 nov en el fallo del PR #13).
 az ad app federated-credential create --id "$APP_ID" --parameters '{
   "name": "github-production-environment",
   "issuer": "https://token.actions.githubusercontent.com",
-  "subject": "repo:SoftwareDesignTEC/cvexpert-ms-cvs:environment:production",
+  "subject": "repo:SoftwareDesignTEC/cvexpert-ms-cvs@328866100:environment:production",
   "audiences": ["api://AzureADTokenExchange"]
 }'
 
