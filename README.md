@@ -45,6 +45,10 @@ La identidad del usuario llega únicamente por los encabezados que inyecta APIM:
 
 El contrato de la API se define primero en `docs/openapi.yaml` (fuente de verdad). Incluye los 6 endpoints de la Fase I (5 de currículums, 1 de plantillas) y los endpoints de IA (expandir experiencia, traducir experiencia no laboral).
 
+Swagger/OpenAPI interactivo: FastAPI lo genera automáticamente en `/docs` (y el JSON crudo en `/openapi.json`) corriendo el servicio, a partir de los mismos modelos Pydantic — no hay nada que mantener a mano aparte del código.
+
+Colección de Postman: `docs/postman/cvexpert-ms-cvs.postman_collection.json`, con al menos una prueba por endpoint (incluye un caso de error 401). Correr las carpetas en orden (Templates → CVs → IA) para que las variables de colección (`templateId`, `cvId`) se encadenen solas.
+
 ## Convenciones
 
 - Ramas: `feat/...`, `fix/...`, `chore/...`

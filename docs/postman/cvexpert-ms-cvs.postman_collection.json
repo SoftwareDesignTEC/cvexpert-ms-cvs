@@ -1,0 +1,346 @@
+{
+  "info": {
+    "_postman_id": "556c2289-8a7a-45ff-bdcf-a632fd03078e",
+    "name": "cvexpert-ms-cvs",
+    "description": "Coleccion de referencia para los 6 endpoints de Fase I + 2 endpoints de IA. Corre las carpetas en orden (Templates -> CVs -> IA) para que las variables de coleccion (templateId, cvId) se encadenen solas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "userId", "value": "demo-user-1" },
+    { "key": "userEmail", "value": "demo@example.com" },
+    { "key": "templateId", "value": "" },
+    { "key": "cvId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "GET /templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["templates"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Respuesta paginada\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"items\");",
+                  "    pm.expect(body).to.have.property(\"totalRecords\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.items && body.items.length > 0) {",
+                  "    pm.collectionVariables.set(\"templateId\", body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CVs",
+      "item": [
+        {
+          "name": "GET /cvs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Respuesta paginada\", function () {",
+                  "    pm.expect(pm.response.json()).to.have.property(\"items\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /cvs",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"CV de prueba Postman\",\n  \"templateId\": \"{{templateId}}\",\n  \"personalInfo\": {\n    \"fullName\": \"Ana Perez\",\n    \"email\": \"ana@example.com\"\n  },\n  \"workExperiences\": [],\n  \"education\": [],\n  \"skills\": [],\n  \"languages\": [],\n  \"certifications\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"El servidor asigna id, userId y timestamps\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.id).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(body.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+                  "    pm.expect(body.createdAt).to.be.a(\"number\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set(\"cvId\", body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /cvs/:id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Es el CV creado en el paso anterior\", function () {",
+                  "    pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get(\"cvId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /cvs/:id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"CV de prueba Postman (actualizado)\",\n  \"templateId\": \"{{templateId}}\",\n  \"personalInfo\": {\n    \"fullName\": \"Ana Perez\",\n    \"email\": \"ana@example.com\"\n  },\n  \"workExperiences\": [],\n  \"education\": [],\n  \"skills\": [],\n  \"languages\": [],\n  \"certifications\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"El titulo se actualizo\", function () {",
+                  "    pm.expect(pm.response.json().title).to.eql(\"CV de prueba Postman (actualizado)\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /cvs/:id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cvs/{{cvId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "{{cvId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "IA",
+      "item": [
+        {
+          "name": "POST /cvs/ai/expand-experience",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company\": \"Acme\",\n  \"position\": \"Backend Developer\",\n  \"description\": \"Trabaje en APIs internas\",\n  \"type\": \"formal\",\n  \"language\": \"es\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs/ai/expand-experience",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "ai", "expand-experience"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve una descripcion expandida\", function () {",
+                  "    pm.expect(pm.response.json()).to.have.property(\"description\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /cvs/ai/translate-experience",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-User-Id", "value": "{{userId}}" },
+              { "key": "X-User-Email", "value": "{{userEmail}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"volunteer\",\n  \"position\": \"Voluntario\",\n  \"description\": \"Ayude en un refugio de animales\",\n  \"language\": \"en\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cvs/ai/translate-experience",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs", "ai", "translate-experience"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Devuelve position y description traducidos\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"position\");",
+                  "    pm.expect(body).to.have.property(\"description\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errores",
+      "item": [
+        {
+          "name": "GET /cvs sin autenticacion -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cvs",
+              "host": ["{{baseUrl}}"],
+              "path": ["cvs"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Formato de error del contrato\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"statusCode\");",
+                  "    pm.expect(body).to.have.property(\"error\");",
+                  "    pm.expect(body).to.have.property(\"message\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
