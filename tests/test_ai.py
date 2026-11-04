@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 from app.llm.base import LLMAdapter, LLMTimeoutError, TranslatedExperience
 from app.llm.factory import get_llm_adapter
 from app.main import app
+from app.repositories.mongo import get_database
+from tests.fake_mongo import FakeDatabase
 from tests.fakes import FakeLLMAdapter
 
 AUTH_HEADERS = {"X-User-Id": "u1", "X-User-Email": "a@b.com"}
@@ -36,10 +38,13 @@ class TimeoutLLMAdapter(LLMAdapter):
 
 @pytest.fixture
 def client():
+    db = FakeDatabase({})
     app.dependency_overrides[get_llm_adapter] = lambda: FakeLLMAdapter()
+    app.dependency_overrides[get_database] = lambda: db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.pop(get_llm_adapter, None)
+    app.dependency_overrides.pop(get_database, None)
 
 
 def test_expand_experience(client):
@@ -64,9 +69,11 @@ def test_expand_experience_requires_auth(client):
 
 def test_llm_timeout_maps_to_503_without_leaking_provider_details():
     app.dependency_overrides[get_llm_adapter] = lambda: TimeoutLLMAdapter()
+    app.dependency_overrides[get_database] = lambda: FakeDatabase({})
     with TestClient(app) as test_client:
         response = test_client.post("/cvs/ai/expand-experience", headers=AUTH_HEADERS, json=EXPAND_BODY)
     app.dependency_overrides.pop(get_llm_adapter, None)
+    app.dependency_overrides.pop(get_database, None)
 
     assert response.status_code == 503
     body = response.json()

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, status
 
 from app.api.deps import CurrentUserDep
 from app.domain.models import Cv, CvInput, PaginatedCvs
+from app.events.factory import EventPublisherDep
 from app.repositories.mongo import DatabaseDep
 from app.services import cvs as cvs_service
 
@@ -20,8 +21,8 @@ async def get_cvs(
 
 
 @router.post("", response_model=Cv, status_code=status.HTTP_201_CREATED)
-async def create_cv(user: CurrentUserDep, db: DatabaseDep, body: CvInput):
-    return await cvs_service.create_cv(db, user_id=user.user_id, data=body)
+async def create_cv(user: CurrentUserDep, db: DatabaseDep, events: EventPublisherDep, body: CvInput):
+    return await cvs_service.create_cv(db, user_id=user.user_id, data=body, event_publisher=events)
 
 
 @router.get("/{cv_id}", response_model=Cv)

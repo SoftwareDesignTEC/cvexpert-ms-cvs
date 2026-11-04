@@ -6,6 +6,9 @@ from pydantic import BaseModel
 
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.models import Cv, CvInput, PaginatedCvs
+from app.events.base import EventPublisher
+from app.events.cv_events import build_cv_generated_event
+from app.repositories.ai_usage import consume_ai_used
 from app.repositories.cvs import delete_cv as repo_delete_cv
 from app.repositories.cvs import find_cv_by_id, find_cvs, insert_cv, replace_cv
 from app.repositories.templates import find_template_by_id
@@ -55,7 +58,9 @@ def _input_sections(data: CvInput) -> dict:
     }
 
 
-async def create_cv(db: AsyncIOMotorDatabase, *, user_id: str, data: CvInput) -> Cv:
+async def create_cv(
+    db: AsyncIOMotorDatabase, *, user_id: str, data: CvInput, event_publisher: EventPublisher
+) -> Cv:
     thumbnail_url = await _resolve_thumbnail_url(db, data.templateId)
     now = int(time.time() * 1000)
     doc = {
@@ -69,6 +74,13 @@ async def create_cv(db: AsyncIOMotorDatabase, *, user_id: str, data: CvInput) ->
         **_input_sections(data),
     }
     await insert_cv(db, doc)
+
+    if await consume_ai_used(db, user_id=user_id):
+        event = build_cv_generated_event(
+            user_id=user_id, cv_id=doc["id"], title=doc["title"], template_id=doc["templateId"]
+        )
+        await event_publisher.publish(subject="cv.generated", message_id=event["eventId"], body=event)
+
     return Cv.model_validate(doc)
 
 
