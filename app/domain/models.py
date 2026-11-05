@@ -119,10 +119,10 @@ class CvInput(BaseModel):
     title: str
     templateId: str
     personalInfo: PersonalInfo
-    workExperiences: list[WorkExperience] = Field(default_factory=list)
-    education: list[Education] = Field(default_factory=list)
-    skills: list[Skill] = Field(default_factory=list)
-    languages: list[Language] = Field(default_factory=list)
+    workExperiences: list[WorkExperience]
+    education: list[Education]
+    skills: list[Skill]
+    languages: list[Language]
     certifications: list[Certification] = Field(default_factory=list)
 
 
