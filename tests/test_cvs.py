@@ -190,6 +190,14 @@ def test_create_cv_missing_required_field_returns_400(client):
     assert response.json()["statusCode"] == 400
 
 
+@pytest.mark.parametrize("field", ["workExperiences", "education", "skills", "languages"])
+def test_create_cv_missing_required_list_field_returns_400(client, field):
+    body = {k: v for k, v in CV_INPUT_BODY.items() if k != field}
+    response = client.post("/cvs", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 400
+    assert field in response.json()["errors"]
+
+
 def test_update_cv_replaces_and_bumps_updated_at(client):
     body = {**CV_INPUT_BODY, "title": "Titulo actualizado"}
     response = client.put("/cvs/cv1", headers=AUTH_HEADERS, json=body)
