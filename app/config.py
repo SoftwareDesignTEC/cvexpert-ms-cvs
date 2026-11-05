@@ -11,5 +11,8 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-3.5-flash-lite"
 
+    service_bus_connection_string: str | None = None
+    service_bus_queue: str = "notificaciones-eventos"
+
 
 settings = Settings()

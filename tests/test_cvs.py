@@ -1,9 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.events.factory import get_event_publisher
+from app.llm.factory import get_llm_adapter
 from app.main import app
 from app.repositories.mongo import get_database
 from tests.fake_mongo import FakeDatabase
+from tests.fakes import FakeEventPublisher, FakeLLMAdapter
 
 
 def _cv(id: str, user_id: str, title: str) -> dict:
@@ -57,12 +60,21 @@ CV_INPUT_BODY = {
 
 
 @pytest.fixture
-def client():
+def events():
+    return FakeEventPublisher()
+
+
+@pytest.fixture
+def client(events):
     db = FakeDatabase({"cvs": [dict(cv) for cv in CVS], "templates": [dict(t) for t in TEMPLATES]})
     app.dependency_overrides[get_database] = lambda: db
+    app.dependency_overrides[get_event_publisher] = lambda: events
+    app.dependency_overrides[get_llm_adapter] = lambda: FakeLLMAdapter()
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.pop(get_database, None)
+    app.dependency_overrides.pop(get_event_publisher, None)
+    app.dependency_overrides.pop(get_llm_adapter, None)
 
 
 def test_list_cvs_filters_by_authenticated_user(client):
@@ -107,6 +119,61 @@ def test_create_cv_sets_server_fields(client):
     assert isinstance(body["id"], str) and body["id"]
     assert isinstance(body["createdAt"], int)
     assert body["createdAt"] == body["updatedAt"]
+
+
+def test_create_cv_does_not_publish_event_without_prior_ai_call(client, events):
+    response = client.post("/cvs", headers=AUTH_HEADERS, json=CV_INPUT_BODY)
+    assert response.status_code == 201
+    assert events.published == []
+
+
+def test_create_cv_publishes_cv_generated_after_ai_call(client, events):
+    client.post(
+        "/cvs/ai/expand-experience",
+        headers=AUTH_HEADERS,
+        json={
+            "company": "Acme",
+            "position": "Backend Developer",
+            "description": "hice cosas",
+            "type": "formal",
+            "language": "es",
+        },
+    )
+
+    response = client.post("/cvs", headers=AUTH_HEADERS, json=CV_INPUT_BODY)
+
+    assert response.status_code == 201
+    cv_id = response.json()["id"]
+    assert len(events.published) == 1
+    event = events.published[0]
+    assert event["subject"] == "cv.generated"
+    body = event["body"]
+    assert event["message_id"] == body["eventId"]
+    assert body["schemaVersion"] == 1
+    assert body["type"] == "cv.generated"
+    assert body["userId"] == "u1"
+    assert isinstance(body["occurredAt"], int)
+    assert body["source"] == "cvs"
+    assert body["data"] == {"cvId": cv_id, "title": "Mi CV", "templateId": "t1"}
+
+
+def test_create_cv_only_publishes_once_per_ai_call(client, events):
+    client.post(
+        "/cvs/ai/expand-experience",
+        headers=AUTH_HEADERS,
+        json={
+            "company": "Acme",
+            "position": "Backend Developer",
+            "description": "hice cosas",
+            "type": "formal",
+            "language": "es",
+        },
+    )
+
+    client.post("/cvs", headers=AUTH_HEADERS, json=CV_INPUT_BODY)
+    client.post("/cvs", headers=AUTH_HEADERS, json=CV_INPUT_BODY)
+
+    assert len(events.published) == 1
 
 
 def test_create_cv_invalid_template_returns_400(client):

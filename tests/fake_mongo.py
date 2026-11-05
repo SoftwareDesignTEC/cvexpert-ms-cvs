@@ -84,6 +84,16 @@ class FakeCollection:
                 return FakeDeleteResult(deleted_count=1)
         return FakeDeleteResult(deleted_count=0)
 
+    async def update_one(self, query: dict, update: dict, *, upsert: bool = False) -> FakeUpdateResult:
+        changes = update.get("$set", {})
+        for doc in self._docs:
+            if _matches(doc, query):
+                doc.update(changes)
+                return FakeUpdateResult(matched_count=1)
+        if upsert:
+            self._docs.append({**query, **changes})
+        return FakeUpdateResult(matched_count=0)
+
 
 class FakeDatabase:
     def __init__(self, collections: dict[str, list[dict]]):
