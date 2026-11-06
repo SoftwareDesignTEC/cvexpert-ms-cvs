@@ -9,6 +9,23 @@ class CurrentUser(BaseModel):
     role: str | None = None
 
 
+TemplateSectionType = Literal["header", "list"]
+
+
+class TemplateSection(BaseModel):
+    type: TemplateSectionType
+    title: str | None = None
+    fields: list[str] | None = None
+    source: str | None = None
+    itemFields: list[str] | None = None
+
+
+class TemplateLayout(BaseModel):
+    columns: Literal[1, 2]
+    colorScheme: str
+    sections: list[TemplateSection]
+
+
 class Template(BaseModel):
     id: str
     name: str
@@ -17,6 +34,7 @@ class Template(BaseModel):
     category: str
     isPremium: bool
     availableOffline: bool
+    layout: TemplateLayout | None = None
 
 
 class PaginatedTemplates(BaseModel):

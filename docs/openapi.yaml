@@ -568,6 +568,61 @@ components:
           type: boolean
         availableOffline:
           type: boolean
+        layout:
+          allOf:
+            - $ref: "#/components/schemas/TemplateLayout"
+          nullable: true
+          description: >
+            Definición estructurada de la plantilla para que web y Android la
+            dibujen igual (CV manual offline o con texto editado de IA). null
+            en las plantillas que todavía no se migraron del diseño anterior
+            (imagen quemada sin datos).
+
+    TemplateLayout:
+      type: object
+      required: [columns, colorScheme, sections]
+      properties:
+        columns:
+          type: integer
+          enum: [1, 2]
+        colorScheme:
+          type: string
+          description: Clave de un preset de colores, no un color libre (ej. "blue").
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateSection"
+
+    TemplateSection:
+      type: object
+      required: [type]
+      description: >
+        Un bloque de la plantilla, en el orden en que se dibuja. No hay
+        posiciones libres.
+      properties:
+        type:
+          type: string
+          enum: [header, list]
+        title:
+          type: string
+          description: Encabezado de la sección (solo en type=list, ej. "Experiencia").
+        fields:
+          type: array
+          items:
+            type: string
+          description: >
+            Solo en type=header. Rutas a campos de Cv, ej.
+            "personalInfo.fullName".
+        source:
+          type: string
+          description: >
+            Solo en type=list. Nombre del arreglo de Cv a repetir, ej.
+            "workExperiences".
+        itemFields:
+          type: array
+          items:
+            type: string
+          description: Solo en type=list. Campos de cada elemento de source, en orden.
 
     PaginatedCvs:
       type: object

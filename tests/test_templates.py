@@ -14,6 +14,22 @@ TEMPLATES = [
         "category": "simple",
         "isPremium": False,
         "availableOffline": True,
+        "layout": {
+            "columns": 1,
+            "colorScheme": "blue",
+            "sections": [
+                {
+                    "type": "header",
+                    "fields": ["personalInfo.fullName", "personalInfo.email"],
+                },
+                {
+                    "type": "list",
+                    "title": "Experiencia",
+                    "source": "workExperiences",
+                    "itemFields": ["position", "company", "startDate", "endDate", "description"],
+                },
+            ],
+        },
     },
     {
         "id": "t2",
@@ -67,3 +83,17 @@ def test_list_templates_paginates(client):
 def test_list_templates_requires_auth_headers(client):
     response = client.get("/templates")
     assert response.status_code == 401
+
+
+def test_list_templates_returns_layout_when_present(client):
+    response = client.get("/templates", params={"search": "minimal"}, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    layout = response.json()["items"][0]["layout"]
+    assert layout["columns"] == 1
+    assert layout["sections"][1]["source"] == "workExperiences"
+
+
+def test_list_templates_layout_is_null_when_not_migrated(client):
+    response = client.get("/templates", params={"search": "executive"}, headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    assert response.json()["items"][0]["layout"] is None
