@@ -1,10 +1,11 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.domain.models import PaginatedTemplates, Template
+from app.domain.models import PaginatedTemplates, Template, TemplateLayout
 from app.repositories.templates import find_templates
 
 
 def _to_template(doc: dict) -> Template:
+    layout = doc.get("layout")
     return Template(
         id=doc["id"],
         name=doc["name"],
@@ -13,6 +14,7 @@ def _to_template(doc: dict) -> Template:
         category=doc["category"],
         isPremium=doc["isPremium"],
         availableOffline=doc["availableOffline"],
+        layout=TemplateLayout.model_validate(layout) if layout else None,
     )
 
 
