@@ -581,48 +581,102 @@ components:
     TemplateLayout:
       type: object
       required: [columns, colorScheme, sections]
+      description: >
+        El layout define QUÉ se muestra y en qué orden/columna. No define
+        tipografía ni medidas exactas: cada cliente (web, Android) dibuja con
+        lo suyo, no se espera paridad al pixel.
+
+
+        Valores desconocidos: si un cliente recibe un type, source o campo
+        que no reconoce, debe ignorarlo (no romper). Así se pueden agregar
+        valores nuevos más adelante sin romper clientes viejos.
       properties:
         columns:
           type: integer
           enum: [1, 2]
         colorScheme:
-          type: string
-          description: Clave de un preset de colores, no un color libre (ej. "blue").
+          $ref: "#/components/schemas/TemplateColorScheme"
         sections:
           type: array
           items:
             $ref: "#/components/schemas/TemplateSection"
+
+    TemplateColorScheme:
+      type: string
+      enum: [blue, green, purple, gray]
+      description: >
+        Clave de un preset de colores (no un color libre), para que web y
+        Android dibujen el mismo color exacto. Valores hex por rol:
+
+
+        - blue: acento #2563EB, texto #1F2937, secundario #6B7280, divisores #E5E7EB
+
+        - green: acento #059669, texto #1F2937, secundario #6B7280, divisores #E5E7EB
+
+        - purple: acento #7C3AED, texto #1F2937, secundario #6B7280, divisores #E5E7EB
+
+        - gray: acento #374151, texto #111827, secundario #6B7280, divisores #D1D5DB
 
     TemplateSection:
       type: object
       required: [type]
       description: >
         Un bloque de la plantilla, en el orden en que se dibuja. No hay
-        posiciones libres.
+        posiciones libres. No lleva título: cada cliente traduce el título
+        según type/source con su propio i18n (la app es ES/EN).
       properties:
         type:
           type: string
           enum: [header, list]
-        title:
-          type: string
-          description: Encabezado de la sección (solo en type=list, ej. "Experiencia").
+        column:
+          type: integer
+          enum: [1, 2]
+          description: >
+            En qué columna va esta sección. Solo tiene sentido si
+            TemplateLayout.columns es 2; si columns es 1, se ignora.
         fields:
           type: array
           items:
             type: string
-          description: >
-            Solo en type=header. Rutas a campos de Cv, ej.
-            "personalInfo.fullName".
+            enum:
+              - personalInfo.fullName
+              - personalInfo.email
+              - personalInfo.phone
+              - personalInfo.address
+              - personalInfo.photoUrl
+              - personalInfo.bio
+              - personalInfo.birthDate
+          description: Solo en type=header. Rutas a campos de PersonalInfo.
         source:
-          type: string
-          description: >
-            Solo en type=list. Nombre del arreglo de Cv a repetir, ej.
-            "workExperiences".
+          $ref: "#/components/schemas/TemplateSource"
         itemFields:
           type: array
           items:
             type: string
-          description: Solo en type=list. Campos de cada elemento de source, en orden.
+          description: >
+            Solo en type=list. Campos de cada elemento de source, en orden.
+            Valores válidos según source:
+
+
+            - workExperiences: company, position, startDate, endDate, current, description, type
+
+            - education: institution, degree, field, startDate, endDate, current
+
+            - skills: name, level, category
+
+            - languages: name, level
+
+            - certifications: name, issuer, issuedAt, expiresAt, credentialUrl
+
+
+            startDate/endDate/issuedAt/expiresAt llegan como EpochMillis
+            (entero), nunca ISO. Si current es true y endDate es null, el
+            cliente muestra "Actualidad"/"Present" en vez de la fecha.
+
+    TemplateSource:
+      type: string
+      enum: [workExperiences, education, skills, languages, certifications]
+      description: Solo en type=list. Nombre del arreglo de Cv a repetir.
 
     PaginatedCvs:
       type: object

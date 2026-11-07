@@ -24,7 +24,6 @@ TEMPLATES = [
                 },
                 {
                     "type": "list",
-                    "title": "Experiencia",
                     "source": "workExperiences",
                     "itemFields": ["position", "company", "startDate", "endDate", "description"],
                 },

@@ -10,19 +10,21 @@ class CurrentUser(BaseModel):
 
 
 TemplateSectionType = Literal["header", "list"]
+TemplateColorScheme = Literal["blue", "green", "purple", "gray"]
+TemplateSource = Literal["workExperiences", "education", "skills", "languages", "certifications"]
 
 
 class TemplateSection(BaseModel):
     type: TemplateSectionType
-    title: str | None = None
+    column: Literal[1, 2] | None = None
     fields: list[str] | None = None
-    source: str | None = None
+    source: TemplateSource | None = None
     itemFields: list[str] | None = None
 
 
 class TemplateLayout(BaseModel):
     columns: Literal[1, 2]
-    colorScheme: str
+    colorScheme: TemplateColorScheme
     sections: list[TemplateSection]
 
 
