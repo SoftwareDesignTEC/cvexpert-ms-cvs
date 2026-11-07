@@ -1,7 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.domain.errors import NotFoundError
 from app.domain.models import PaginatedTemplates, Template, TemplateLayout
-from app.repositories.templates import find_templates
+from app.repositories.templates import find_template_by_id, find_templates
 
 
 def _to_template(doc: dict) -> Template:
@@ -28,3 +29,10 @@ async def list_templates(
         pageSize=page_size,
         totalRecords=total,
     )
+
+
+async def get_template(db: AsyncIOMotorDatabase, *, template_id: str) -> Template:
+    doc = await find_template_by_id(db, template_id=template_id)
+    if doc is None:
+        raise NotFoundError("Plantilla no encontrada")
+    return _to_template(doc)

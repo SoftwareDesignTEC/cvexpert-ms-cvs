@@ -155,6 +155,30 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /templates/{id}:
+    get:
+      tags: [templates]
+      summary: Obtiene una plantilla por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      responses:
+        "200":
+          description: Plantilla encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Template"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /cvs/ai/expand-experience:
     post:
       tags: [ai]

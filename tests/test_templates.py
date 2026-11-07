@@ -96,3 +96,14 @@ def test_list_templates_layout_is_null_when_not_migrated(client):
     response = client.get("/templates", params={"search": "executive"}, headers=AUTH_HEADERS)
     assert response.status_code == 200
     assert response.json()["items"][0]["layout"] is None
+
+
+def test_get_template_by_id(client):
+    response = client.get("/templates/t2", headers=AUTH_HEADERS)
+    assert response.status_code == 200
+    assert response.json()["name"] == "Executive"
+
+
+def test_get_template_by_id_not_found(client):
+    response = client.get("/templates/no-existe", headers=AUTH_HEADERS)
+    assert response.status_code == 404

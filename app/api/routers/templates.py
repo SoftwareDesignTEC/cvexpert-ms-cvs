@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Query
 
 from app.api.deps import CurrentUserDep
-from app.domain.models import PaginatedTemplates
+from app.domain.models import PaginatedTemplates, Template
 from app.repositories.mongo import DatabaseDep
-from app.services.templates import list_templates
+from app.services.templates import get_template, list_templates
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -17,3 +17,8 @@ async def get_templates(
     search: str | None = Query(default=None),
 ):
     return await list_templates(db, page=page, page_size=pageSize, search=search)
+
+
+@router.get("/{template_id}", response_model=Template)
+async def get_template_by_id(template_id: str, user: CurrentUserDep, db: DatabaseDep):
+    return await get_template(db, template_id=template_id)
