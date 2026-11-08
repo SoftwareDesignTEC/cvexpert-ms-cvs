@@ -14,5 +14,7 @@ class Settings(BaseSettings):
     service_bus_connection_string: str | None = None
     service_bus_queue: str = "notificaciones-eventos"
 
+    apim_cert_thumbprints: str = ""
+
 
 settings = Settings()

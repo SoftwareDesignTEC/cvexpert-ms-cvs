@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import logging
 from http.client import responses as http_status_phrases
 
@@ -6,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api.routers import ai, cvs, templates
+from app.config import settings
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.models import Error
 from app.llm.base import LLMError, LLMProviderError, LLMRateLimitError, LLMTimeoutError
@@ -29,6 +32,28 @@ def _error_response(
 ) -> JSONResponse:
     body = Error(statusCode=status_code, error=error, message=message, errors=errors)
     return JSONResponse(status_code=status_code, content=body.model_dump(exclude_none=True))
+
+
+def _allowed_cert_thumbprints() -> set[str]:
+    return {
+        t.strip().replace(":", "").upper()
+        for t in settings.apim_cert_thumbprints.split(",")
+        if t.strip()
+    }
+
+
+@app.middleware("http")
+async def require_apim_client_cert(request: Request, call_next):
+    allowed = _allowed_cert_thumbprints()
+    if allowed and request.url.path != "/health":
+        cert = request.headers.get("X-ARR-ClientCert", "")
+        try:
+            thumbprint = hashlib.sha1(base64.b64decode(cert)).hexdigest().upper()
+        except ValueError:
+            thumbprint = ""
+        if thumbprint not in allowed:
+            return _error_response(403, "Forbidden", "La llamada no trae el certificado de APIM.")
+    return await call_next(request)
 
 
 @app.exception_handler(LLMTimeoutError)
