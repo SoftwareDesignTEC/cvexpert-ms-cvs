@@ -1,3 +1,4 @@
+import logging
 from http.client import responses as http_status_phrases
 
 from fastapi import FastAPI, HTTPException, Request
@@ -8,6 +9,8 @@ from app.api.routers import ai, cvs, templates
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.models import Error
 from app.llm.base import LLMError, LLMProviderError, LLMRateLimitError, LLMTimeoutError
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="cvexpert-ms-cvs")
 
@@ -73,3 +76,9 @@ async def handle_request_validation_error(request: Request, exc: RequestValidati
         loc = ".".join(str(p) for p in err["loc"] if p != "body")
         errors[loc or "body"] = err["msg"]
     return _error_response(400, "BadRequest", "Solicitud inválida.", errors=errors)
+
+
+@app.exception_handler(Exception)
+async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Error no manejado en %s %s", request.method, request.url.path)
+    return _error_response(500, "InternalServerError", "Ocurrió un error inesperado.")

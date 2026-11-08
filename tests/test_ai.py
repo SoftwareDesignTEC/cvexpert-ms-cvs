@@ -79,3 +79,20 @@ def test_llm_timeout_maps_to_503_without_leaking_provider_details():
     body = response.json()
     assert body["statusCode"] == 503
     assert "boom" not in body["message"]
+
+
+def test_unexpected_error_maps_to_500_with_contract_shape():
+    def _broken_adapter():
+        raise RuntimeError("Proveedor de LLM no soportado: none")
+
+    app.dependency_overrides[get_llm_adapter] = _broken_adapter
+    app.dependency_overrides[get_database] = lambda: FakeDatabase({})
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        response = test_client.post("/cvs/ai/expand-experience", headers=AUTH_HEADERS, json=EXPAND_BODY)
+    app.dependency_overrides.pop(get_llm_adapter, None)
+    app.dependency_overrides.pop(get_database, None)
+
+    assert response.status_code == 500
+    body = response.json()
+    assert body["statusCode"] == 500
+    assert "Proveedor de LLM" not in body["message"]

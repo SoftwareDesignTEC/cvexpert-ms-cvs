@@ -1,14 +1,16 @@
-"""Migracion manual: carga un layout real en dos plantillas ya existentes en Mongo.
+"""Siembra dos plantillas completas en Mongo (upsert), con layout real.
 
-Pensado para correr una sola vez contra la base real (no local), para que Andres
-pueda probar el PDF de punta a punta con una plantilla de 1 columna y otra de 2.
+La coleccion `templates` en produccion esta vacia: sin esto, GET /templates
+devuelve 0 resultados y nadie puede crear un CV (POST /cvs valida que
+templateId exista). Este script crea dos plantillas completas desde cero
+(no asume que ya existan), una de 1 columna y otra de 2.
 
 Antes de correrlo:
-1. Reemplazar TEMPLATE_ID_1_COLUMN / TEMPLATE_ID_2_COLUMNS por los id reales de
-   dos plantillas que ya existan en la coleccion `templates` (los ves con
-   GET /templates o en Cosmos DB directamente).
-2. Que MONGODB_URI (en el entorno donde se corre) apunte a la base real, no a
-   localhost. Ojo: esto escribe directo sobre datos de produccion.
+1. Revisar previewUrl: son placeholders (placehold.co). Reemplazarlos por
+   las imagenes reales de las plantillas en cuanto esten disponibles,
+   corriendo el script de nuevo (es upsert, no rompe nada).
+2. Que MONGODB_URI (en el entorno donde se corre) apunte a la base real, no
+   a localhost. Ojo: esto escribe directo sobre datos de produccion.
 
 Uso: python scripts/migrate_templates_layout.py
 """
@@ -18,9 +20,6 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-
-TEMPLATE_ID_1_COLUMN = "CAMBIAR-POR-ID-REAL-PLANTILLA-1-COLUMNA"
-TEMPLATE_ID_2_COLUMNS = "CAMBIAR-POR-ID-REAL-PLANTILLA-2-COLUMNAS"
 
 LAYOUT_1_COLUMN = {
     "columns": 1,
@@ -71,20 +70,40 @@ LAYOUT_2_COLUMNS = {
     ],
 }
 
+TEMPLATES = [
+    {
+        "id": "minimal",
+        "name": "Minimal",
+        "description": "Plantilla simple de una columna",
+        "previewUrl": "https://placehold.co/400x560?text=Minimal",
+        "category": "simple",
+        "isPremium": False,
+        "availableOffline": True,
+        "layout": LAYOUT_1_COLUMN,
+    },
+    {
+        "id": "executive",
+        "name": "Executive",
+        "description": "Plantilla ejecutiva de dos columnas",
+        "previewUrl": "https://placehold.co/400x560?text=Executive",
+        "category": "formal",
+        "isPremium": False,
+        "availableOffline": True,
+        "layout": LAYOUT_2_COLUMNS,
+    },
+]
+
 
 async def main() -> None:
     client = AsyncIOMotorClient(settings.mongodb_uri)
     collection = client[settings.mongodb_db]["templates"]
 
-    result_1 = await collection.update_one(
-        {"id": TEMPLATE_ID_1_COLUMN}, {"$set": {"layout": LAYOUT_1_COLUMN}}
-    )
-    result_2 = await collection.update_one(
-        {"id": TEMPLATE_ID_2_COLUMNS}, {"$set": {"layout": LAYOUT_2_COLUMNS}}
-    )
-
-    print(f"1 columna ({TEMPLATE_ID_1_COLUMN}): matched={result_1.matched_count} modified={result_1.modified_count}")
-    print(f"2 columnas ({TEMPLATE_ID_2_COLUMNS}): matched={result_2.matched_count} modified={result_2.modified_count}")
+    for template in TEMPLATES:
+        result = await collection.update_one(
+            {"id": template["id"]}, {"$set": template}, upsert=True
+        )
+        action = "creada" if result.upserted_id else "actualizada"
+        print(f"{template['id']}: {action}")
 
     client.close()
 
