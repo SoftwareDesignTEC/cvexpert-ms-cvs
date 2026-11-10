@@ -1,9 +1,9 @@
-"""Siembra dos plantillas completas en Mongo (upsert), con layout real.
+"""Siembra las plantillas completas en Mongo (upsert), con layout real.
 
 La coleccion `templates` en produccion esta vacia: sin esto, GET /templates
 devuelve 0 resultados y nadie puede crear un CV (POST /cvs valida que
-templateId exista). Este script crea dos plantillas completas desde cero
-(no asume que ya existan), una de 1 columna y otra de 2.
+templateId exista). Este script crea las plantillas completas desde cero
+(no asume que ya existan).
 
 Antes de correrlo:
 1. Revisar previewUrl: son placeholders (placehold.co). Reemplazarlos por
@@ -80,6 +80,35 @@ LAYOUT_2_COLUMNS = {
     ],
 }
 
+LAYOUT_HARVARD = {
+    "columns": 1,
+    "colorScheme": "gray",
+    "sections": [
+        {
+            "type": "header",
+            "fields": [
+                "personalInfo.fullName",
+                "personalInfo.email",
+                "personalInfo.phone",
+                "personalInfo.address",
+            ],
+        },
+        {
+            "type": "list",
+            "source": "education",
+            "itemFields": ["degree", "institution", "field", "startDate", "endDate", "current"],
+        },
+        {
+            "type": "list",
+            "source": "workExperiences",
+            "itemFields": ["position", "company", "startDate", "endDate", "current", "description"],
+        },
+        {"type": "list", "source": "skills", "itemFields": ["name", "category", "level"]},
+        {"type": "list", "source": "languages", "itemFields": ["name", "level"]},
+        {"type": "list", "source": "certifications", "itemFields": ["name", "issuer", "issuedAt"]},
+    ],
+}
+
 TEMPLATES = [
     {
         "id": "minimal",
@@ -100,6 +129,16 @@ TEMPLATES = [
         "isPremium": False,
         "availableOffline": True,
         "layout": LAYOUT_2_COLUMNS,
+    },
+    {
+        "id": "harvard",
+        "name": "Harvard",
+        "description": "Plantilla academica de una columna, sin foto, con educacion antes de experiencia",
+        "previewUrl": "https://placehold.co/400x560?text=Harvard",
+        "category": "academico",
+        "isPremium": False,
+        "availableOffline": True,
+        "layout": LAYOUT_HARVARD,
     },
 ]
 
