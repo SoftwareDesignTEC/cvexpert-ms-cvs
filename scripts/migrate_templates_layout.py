@@ -1,9 +1,9 @@
-"""Siembra dos plantillas completas en Mongo (upsert), con layout real.
+"""Siembra las plantillas completas en Mongo (upsert), con layout real.
 
 La coleccion `templates` en produccion esta vacia: sin esto, GET /templates
 devuelve 0 resultados y nadie puede crear un CV (POST /cvs valida que
-templateId exista). Este script crea dos plantillas completas desde cero
-(no asume que ya existan), una de 1 columna y otra de 2.
+templateId exista). Este script crea las plantillas completas desde cero
+(no asume que ya existan).
 
 Antes de correrlo:
 1. Revisar previewUrl: son placeholders (placehold.co). Reemplazarlos por
@@ -70,6 +70,90 @@ LAYOUT_2_COLUMNS = {
     ],
 }
 
+LAYOUT_SHOWCASE = {
+    "columns": 2,
+    "colorScheme": "green",
+    "sections": [
+        {
+            "type": "header",
+            "column": 1,
+            "fields": [
+                "personalInfo.fullName",
+                "personalInfo.email",
+                "personalInfo.phone",
+                "personalInfo.birthDate",
+                "personalInfo.bio",
+            ],
+        },
+        {
+            "type": "list",
+            "column": 1,
+            "source": "workExperiences",
+            "itemFields": ["position", "company", "startDate", "endDate", "current", "description"],
+        },
+        {
+            "type": "list",
+            "column": 1,
+            "source": "education",
+            "itemFields": ["degree", "institution", "field", "startDate", "endDate", "current"],
+        },
+        {"type": "list", "column": 2, "source": "skills", "itemFields": ["name", "category", "level"]},
+        {"type": "list", "column": 2, "source": "languages", "itemFields": ["name", "level"]},
+        {
+            "type": "list",
+            "column": 2,
+            "source": "certifications",
+            "itemFields": ["name", "issuer", "issuedAt"],
+        },
+    ],
+}
+
+LAYOUT_PHOTO_2_COLUMNS = {
+    "columns": 2,
+    "colorScheme": "blue",
+    "sections": [
+        {
+            "type": "header",
+            "fields": [
+                "personalInfo.photoUrl",
+                "personalInfo.fullName",
+                "personalInfo.email",
+                "personalInfo.phone",
+                "personalInfo.address",
+                "personalInfo.bio",
+            ],
+        },
+        {
+            "type": "list",
+            "column": 1,
+            "source": "workExperiences",
+            "itemFields": [
+                "position",
+                "company",
+                "startDate",
+                "endDate",
+                "current",
+                "description",
+                "type",
+            ],
+        },
+        {
+            "type": "list",
+            "column": 1,
+            "source": "education",
+            "itemFields": ["degree", "institution", "field", "startDate", "endDate", "current"],
+        },
+        {"type": "list", "column": 2, "source": "skills", "itemFields": ["name", "category", "level"]},
+        {"type": "list", "column": 2, "source": "languages", "itemFields": ["name", "level"]},
+        {
+            "type": "list",
+            "column": 2,
+            "source": "certifications",
+            "itemFields": ["name", "issuer", "issuedAt", "expiresAt"],
+        },
+    ],
+}
+
 TEMPLATES = [
     {
         "id": "minimal",
@@ -90,6 +174,26 @@ TEMPLATES = [
         "isPremium": False,
         "availableOffline": True,
         "layout": LAYOUT_2_COLUMNS,
+    },
+    {
+        "id": "showcase",
+        "name": "Showcase",
+        "description": "Plantilla premium de dos columnas, disponible solo en linea",
+        "previewUrl": "https://placehold.co/400x560?text=Showcase",
+        "category": "premium",
+        "isPremium": True,
+        "availableOffline": False,
+        "layout": LAYOUT_SHOWCASE,
+    },
+    {
+        "id": "photo-two-column",
+        "name": "Foto",
+        "description": "Plantilla de dos columnas con foto de perfil a la izquierda",
+        "previewUrl": "https://placehold.co/400x560?text=Foto",
+        "category": "formal",
+        "isPremium": False,
+        "availableOffline": True,
+        "layout": LAYOUT_PHOTO_2_COLUMNS,
     },
 ]
 
