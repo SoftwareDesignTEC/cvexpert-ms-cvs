@@ -27,7 +27,12 @@ LAYOUT_1_COLUMN = {
     "sections": [
         {
             "type": "header",
-            "fields": ["personalInfo.fullName", "personalInfo.email", "personalInfo.phone"],
+            "fields": [
+                "personalInfo.fullName",
+                "personalInfo.email",
+                "personalInfo.phone",
+                "personalInfo.photoUrl",
+            ],
         },
         {
             "type": "list",
@@ -51,7 +56,12 @@ LAYOUT_2_COLUMNS = {
         {
             "type": "header",
             "column": 1,
-            "fields": ["personalInfo.fullName", "personalInfo.email", "personalInfo.phone"],
+            "fields": [
+                "personalInfo.fullName",
+                "personalInfo.email",
+                "personalInfo.phone",
+                "personalInfo.photoUrl",
+            ],
         },
         {
             "type": "list",
