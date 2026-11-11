@@ -268,9 +268,12 @@ paths:
         Síncrono: responde en la misma llamada con el CV ya creado, listo
         para abrir en el editor sin un GET extra. personalInfo.email sale
         de X-User-Email, igual que en el resto del contrato; el body no lo
-        incluye. La IA puede dejar listas vacías si el texto no menciona esa
-        sección; las filas que no alcance a completar con datos mínimos
-        válidos se descartan en vez de guardarse incompletas.
+        incluye. title y templateId son opcionales: si se omiten, el
+        servidor pone "CV generado el <fecha>" y la plantilla "minimal".
+        El usuario los cambia después desde el editor. La IA puede dejar
+        listas vacías si el texto no menciona esa sección; las filas que no
+        alcance a completar con datos mínimos válidos se descartan en vez
+        de guardarse incompletas.
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"
@@ -874,12 +877,14 @@ components:
 
     GenerateCvRequest:
       type: object
-      required: [title, templateId, fullName, freeText, language]
+      required: [fullName, freeText, language]
       properties:
         title:
           type: string
+          description: Opcional. Por defecto "CV generado el <fecha>".
         templateId:
           type: string
+          description: Opcional. Por defecto "minimal".
         fullName:
           type: string
         phone:

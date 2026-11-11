@@ -35,7 +35,16 @@ TEMPLATES = [
         "category": "simple",
         "isPremium": False,
         "availableOffline": True,
-    }
+    },
+    {
+        "id": "minimal",
+        "name": "Minimal",
+        "description": "Plantilla minimalista",
+        "previewUrl": "https://example.com/minimal.png",
+        "category": "simple",
+        "isPremium": False,
+        "availableOffline": True,
+    },
 ]
 
 
@@ -135,6 +144,19 @@ def test_generate_cv_creates_full_cv(client):
     assert created["personalInfo"]["fullName"] == "Ana Perez"
     assert created["personalInfo"]["email"] == "a@b.com"
     assert created["personalInfo"]["bio"] == "Resumen generado a partir de: " + body["freeText"]
+
+
+def test_generate_cv_defaults_title_and_template_when_omitted(client):
+    body = {
+        "fullName": "Ana Perez",
+        "freeText": "Trabajé 3 años en Acme como desarrolladora backend",
+        "language": "es",
+    }
+    response = client.post("/cvs/ai/generate-cv", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 201
+    created = response.json()
+    assert created["templateId"] == "minimal"
+    assert created["title"].startswith("CV generado el ")
 
 
 def test_generate_cv_requires_auth(client):

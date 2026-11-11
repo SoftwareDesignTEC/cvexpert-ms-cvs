@@ -189,8 +189,8 @@ class TranslateExperienceResponse(BaseModel):
 
 
 class GenerateCvRequest(BaseModel):
-    title: str
-    templateId: str
+    title: str | None = None
+    templateId: str | None = None
     fullName: str
     phone: str | None = None
     freeText: str
