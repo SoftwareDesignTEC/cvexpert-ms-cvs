@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class CurrentUser(BaseModel):
@@ -71,13 +71,19 @@ class PersonalInfo(BaseModel):
 
 class WorkExperience(BaseModel):
     id: str | None = None
-    company: str
+    company: str | None = None
     position: str
     startDate: int
     endDate: int | None = None
     current: bool
     description: str
     type: WorkExperienceType
+
+    @model_validator(mode="after")
+    def _company_required_for_formal(self) -> "WorkExperience":
+        if self.type == "formal" and not self.company:
+            raise ValueError("company es obligatoria cuando type es 'formal'")
+        return self
 
 
 class Education(BaseModel):
@@ -180,3 +186,25 @@ class TranslateExperienceRequest(BaseModel):
 class TranslateExperienceResponse(BaseModel):
     position: str
     description: str
+
+
+class GenerateCvRequest(BaseModel):
+    title: str
+    templateId: str
+    fullName: str
+    phone: str | None = None
+    freeText: str
+    language: ResponseLanguage
+
+
+GenerateTextField = Literal["profileBio", "experienceDescription"]
+
+
+class GenerateTextRequest(BaseModel):
+    field: GenerateTextField
+    context: str
+    language: ResponseLanguage
+
+
+class GenerateTextResponse(BaseModel):
+    text: str
