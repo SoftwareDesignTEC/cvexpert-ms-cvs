@@ -198,6 +198,41 @@ def test_create_cv_missing_required_list_field_returns_400(client, field):
     assert field in response.json()["errors"]
 
 
+def test_create_cv_allows_missing_company_for_non_formal_experience(client):
+    body = {
+        **CV_INPUT_BODY,
+        "workExperiences": [
+            {
+                "position": "Voluntario",
+                "startDate": 1700000000000,
+                "current": True,
+                "description": "ayude en un refugio",
+                "type": "volunteer",
+            }
+        ],
+    }
+    response = client.post("/cvs", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 201
+    assert response.json()["workExperiences"][0]["company"] is None
+
+
+def test_create_cv_requires_company_for_formal_experience(client):
+    body = {
+        **CV_INPUT_BODY,
+        "workExperiences": [
+            {
+                "position": "Developer",
+                "startDate": 1700000000000,
+                "current": True,
+                "description": "hice cosas",
+                "type": "formal",
+            }
+        ],
+    }
+    response = client.post("/cvs", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 400
+
+
 def test_update_cv_replaces_and_bumps_updated_at(client):
     body = {**CV_INPUT_BODY, "title": "Titulo actualizado"}
     response = client.put("/cvs/cv1", headers=AUTH_HEADERS, json=body)

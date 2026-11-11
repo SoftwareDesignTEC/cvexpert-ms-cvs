@@ -231,6 +231,67 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /cvs/ai/generate-text:
+    post:
+      tags: [ai]
+      summary: Genera un texto suelto con IA (perfil profesional o descripción de experiencia)
+      description: >
+        Sin estado y sin guardar nada: el cliente recibe el texto sugerido,
+        lo muestra para revisión y recién lo persiste cuando el usuario
+        guarda el CV por el flujo normal (POST/PUT /cvs).
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateTextRequest"
+      responses:
+        "200":
+          description: Texto sugerido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateTextResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /cvs/ai/generate-cv:
+    post:
+      tags: [ai]
+      summary: Genera y guarda un CV completo a partir de un texto libre dictado/escrito
+      description: >
+        Síncrono: responde en la misma llamada con el CV ya creado, listo
+        para abrir en el editor sin un GET extra. personalInfo.email sale
+        de X-User-Email, igual que en el resto del contrato; el body no lo
+        incluye. La IA puede dejar listas vacías si el texto no menciona esa
+        sección; las filas que no alcance a completar con datos mínimos
+        válidos se descartan en vez de guardarse incompletas.
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateCvRequest"
+      responses:
+        "201":
+          description: CV generado y creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   parameters:
     XUserId:
@@ -370,12 +431,17 @@ components:
 
     WorkExperience:
       type: object
-      required: [id, company, position, startDate, current, description, type]
+      required: [id, position, startDate, current, description, type]
+      description: >
+        company es obligatoria solo cuando type es "formal" (empleo con una
+        empresa). En freelance, volunteer, school-project e informal puede
+        venir null u omitirse.
       properties:
         id:
           type: string
         company:
           type: string
+          nullable: true
         position:
           type: string
         startDate:
@@ -777,3 +843,50 @@ components:
           type: string
         description:
           type: string
+
+    GenerateTextField:
+      type: string
+      enum: [profileBio, experienceDescription]
+      description: Qué campo se está redactando.
+
+    GenerateTextRequest:
+      type: object
+      required: [field, context, language]
+      properties:
+        field:
+          $ref: "#/components/schemas/GenerateTextField"
+        context:
+          type: string
+          description: >
+            Texto libre con lo que el cliente ya tenga a mano (puesto,
+            empresa, borrador del usuario, lo que sea relevante). El
+            servicio no valida su forma, solo lo usa como contexto del
+            prompt.
+        language:
+          type: string
+          enum: [es, en]
+    GenerateTextResponse:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+
+    GenerateCvRequest:
+      type: object
+      required: [title, templateId, fullName, freeText, language]
+      properties:
+        title:
+          type: string
+        templateId:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        freeText:
+          type: string
+          description: Texto dictado o escrito por el usuario describiendo su trayectoria.
+        language:
+          type: string
+          enum: [es, en]
