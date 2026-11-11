@@ -271,9 +271,13 @@ paths:
         incluye. title y templateId son opcionales: si se omiten, el
         servidor pone "CV generado el <fecha>" y la plantilla "minimal".
         El usuario los cambia después desde el editor. La IA puede dejar
-        listas vacías si el texto no menciona esa sección; las filas que no
-        alcance a completar con datos mínimos válidos se descartan en vez
-        de guardarse incompletas.
+        listas vacías si el texto no menciona esa sección. Si una
+        experiencia o estudio no trae fecha de inicio, se guarda con la
+        fecha del día en que se generó el CV (no se descarta), para que el
+        usuario la corrija en el editor en vez de perder la fila. Solo se
+        descarta una fila cuando falta un dato que no se puede completar
+        con un valor por defecto razonable (ej. una experiencia type
+        "formal" sin company).
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"

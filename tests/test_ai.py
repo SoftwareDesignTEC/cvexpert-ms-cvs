@@ -197,9 +197,10 @@ def test_generate_cv_normalizes_and_discards_unusable_entries(client):
                 "description": "ayude",
                 "type": "volunteer",
             },
-            {"position": "sin fecha, se descarta", "current": False, "description": "x", "type": "informal"},
+            {"position": "sin fecha, se guarda con fecha aproximada", "current": False, "description": "x", "type": "informal"},
+            {"position": "formal sin empresa, se descarta", "current": False, "description": "x", "type": "formal"},
         ],
-        education=[],
+        education=[{"institution": "TEC", "current": True, "startDate": None}],
         skills=[{"name": "Python", "level": "advanced"}, {"name": "sin nivel, se descarta"}],
         languages=[{"name": "Inglés", "level": "advanced"}],
         certifications=[],
@@ -217,11 +218,20 @@ def test_generate_cv_normalizes_and_discards_unusable_entries(client):
 
     assert response.status_code == 201
     created = response.json()
-    assert len(created["workExperiences"]) == 2
+    assert len(created["workExperiences"]) == 3
+    assert {e["type"] for e in created["workExperiences"]} == {"formal", "volunteer", "informal"}
     formal = next(e for e in created["workExperiences"] if e["type"] == "formal")
     assert formal["company"] == "Acme"
     volunteer = next(e for e in created["workExperiences"] if e["type"] == "volunteer")
     assert volunteer["company"] is None
+    without_date = next(e for e in created["workExperiences"] if e["type"] == "informal")
+    assert isinstance(without_date["startDate"], int)
+
+    assert len(created["education"]) == 1
+    assert created["education"][0]["institution"] == "TEC"
+    assert created["education"][0]["degree"] == ""
+    assert isinstance(created["education"][0]["startDate"], int)
+
     assert len(created["skills"]) == 1
     assert created["skills"][0]["name"] == "Python"
     assert created["skills"][0]["category"] == "General"

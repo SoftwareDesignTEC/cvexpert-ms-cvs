@@ -26,6 +26,11 @@ def _default_title() -> str:
     return f"CV generado el {datetime.now(UTC).date().isoformat()}"
 
 
+def _placeholder_start_date() -> int:
+    today = datetime.now(UTC).date()
+    return int(datetime(today.year, today.month, today.day, tzinfo=UTC).timestamp() * 1000)
+
+
 def _parse_date_to_epoch_ms(value: object) -> int | None:
     if not isinstance(value, str) or not value.strip():
         return None
@@ -47,9 +52,10 @@ def _parse_date_to_epoch_ms(value: object) -> int | None:
 def _normalize_work_experience(raw: dict) -> WorkExperience | None:
     item = dict(raw)
     item["current"] = bool(item.get("current", False))
-    item["startDate"] = _parse_date_to_epoch_ms(item.get("startDate"))
+    item["startDate"] = _parse_date_to_epoch_ms(item.get("startDate")) or _placeholder_start_date()
     item["endDate"] = _parse_date_to_epoch_ms(item.get("endDate"))
     item.setdefault("description", "")
+    item.setdefault("position", "")
     if item.get("type") not in ("formal", "freelance", "volunteer", "school-project", "informal"):
         item["type"] = "informal"
     try:
@@ -61,8 +67,11 @@ def _normalize_work_experience(raw: dict) -> WorkExperience | None:
 def _normalize_education(raw: dict) -> Education | None:
     item = dict(raw)
     item["current"] = bool(item.get("current", False))
-    item["startDate"] = _parse_date_to_epoch_ms(item.get("startDate"))
+    item["startDate"] = _parse_date_to_epoch_ms(item.get("startDate")) or _placeholder_start_date()
     item["endDate"] = _parse_date_to_epoch_ms(item.get("endDate"))
+    item.setdefault("institution", "")
+    item.setdefault("degree", "")
+    item.setdefault("field", "")
     try:
         return Education.model_validate(item)
     except PydanticValidationError:
