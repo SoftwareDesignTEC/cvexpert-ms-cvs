@@ -63,6 +63,7 @@ async def handle_llm_timeout(request: Request, exc: LLMTimeoutError) -> JSONResp
 
 @app.exception_handler(LLMRateLimitError)
 async def handle_llm_rate_limit(request: Request, exc: LLMRateLimitError) -> JSONResponse:
+    logger.warning("Rate limit del proveedor de IA en %s %s", request.method, request.url.path)
     return _error_response(
         429, "RateLimitExceeded", "Límite de solicitudes al servicio de IA alcanzado, intenta de nuevo más tarde."
     )
@@ -70,11 +71,13 @@ async def handle_llm_rate_limit(request: Request, exc: LLMRateLimitError) -> JSO
 
 @app.exception_handler(LLMProviderError)
 async def handle_llm_provider_error(request: Request, exc: LLMProviderError) -> JSONResponse:
+    logger.error("Error del proveedor de IA en %s %s", request.method, request.url.path, exc_info=exc)
     return _error_response(502, "BadGateway", "El servicio de IA no está disponible en este momento.")
 
 
 @app.exception_handler(LLMError)
 async def handle_llm_error(request: Request, exc: LLMError) -> JSONResponse:
+    logger.error("Error del proveedor de IA en %s %s", request.method, request.url.path, exc_info=exc)
     return _error_response(502, "BadGateway", "El servicio de IA no está disponible en este momento.")
 
 
