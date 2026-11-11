@@ -19,6 +19,11 @@ from app.repositories.ai_usage import mark_ai_used
 from app.services.cvs import create_cv
 
 DEFAULT_SKILL_CATEGORY = "General"
+DEFAULT_TEMPLATE_ID = "minimal"
+
+
+def _default_title() -> str:
+    return f"CV generado el {datetime.now(UTC).date().isoformat()}"
 
 
 def _parse_date_to_epoch_ms(value: object) -> int | None:
@@ -127,14 +132,19 @@ async def generate_cv(
     user_id: str,
     event_publisher: EventPublisher,
     draft: GeneratedCvDraft,
-    title: str,
-    template_id: str,
+    title: str | None,
+    template_id: str | None,
     full_name: str,
     email: str,
     phone: str | None,
 ) -> Cv:
     cv_input = build_cv_input_from_draft(
-        draft, title=title, template_id=template_id, full_name=full_name, email=email, phone=phone
+        draft,
+        title=title or _default_title(),
+        template_id=template_id or DEFAULT_TEMPLATE_ID,
+        full_name=full_name,
+        email=email,
+        phone=phone,
     )
     await mark_ai_used(db, user_id=user_id)
     return await create_cv(db, user_id=user_id, data=cv_input, event_publisher=event_publisher)
