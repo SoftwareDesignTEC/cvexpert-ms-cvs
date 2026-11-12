@@ -1,3 +1,5 @@
+from app.llm.base import NONSENSE_INSTRUCTION
+
 LANGUAGE_NAMES = {"es": "español", "en": "English"}
 
 FIELD_INSTRUCTIONS = {
@@ -19,6 +21,6 @@ def build_prompt(field: str, context: str, language: str) -> str:
         "Eres un asistente que ayuda a redactar currículums. "
         f"{instruction} Escribe en {language_name}. No inventes logros ni cifras que no "
         "estén implícitos en el contexto. Responde solo con el texto final, sin comillas "
-        "ni explicaciones adicionales.\n\n"
+        f"ni explicaciones adicionales. {NONSENSE_INSTRUCTION}\n\n"
         f"Contexto disponible:\n{context}"
     )

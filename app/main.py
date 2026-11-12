@@ -11,7 +11,13 @@ from app.api.routers import ai, cvs, templates
 from app.config import settings
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.models import Error
-from app.llm.base import LLMError, LLMProviderError, LLMRateLimitError, LLMTimeoutError
+from app.llm.base import (
+    LLMError,
+    LLMNonsenseInputError,
+    LLMProviderError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +73,11 @@ async def handle_llm_rate_limit(request: Request, exc: LLMRateLimitError) -> JSO
     return _error_response(
         429, "RateLimitExceeded", "Límite de solicitudes al servicio de IA alcanzado, intenta de nuevo más tarde."
     )
+
+
+@app.exception_handler(LLMNonsenseInputError)
+async def handle_llm_nonsense_input(request: Request, exc: LLMNonsenseInputError) -> JSONResponse:
+    return _error_response(400, "BadRequest", str(exc))
 
 
 @app.exception_handler(LLMProviderError)

@@ -4,8 +4,11 @@ import httpx
 
 from app.config import settings
 from app.llm.base import (
+    NONSENSE_MESSAGE,
+    NONSENSE_SENTINEL,
     GeneratedCvDraft,
     LLMAdapter,
+    LLMNonsenseInputError,
     LLMProviderError,
     LLMRateLimitError,
     LLMTimeoutError,
@@ -54,7 +57,10 @@ class GeminiAdapter(LLMAdapter):
     ) -> str:
         prompt = expand_experience_prompt.build_prompt(company, position, description, type, language)
         result = await self._generate(prompt)
-        return result.strip()
+        result = result.strip()
+        if result == NONSENSE_SENTINEL:
+            raise LLMNonsenseInputError(NONSENSE_MESSAGE)
+        return result
 
     async def translate_experience(
         self,
@@ -70,6 +76,8 @@ class GeminiAdapter(LLMAdapter):
         raw = await self._generate(prompt, response_schema=translate_experience_prompt.RESPONSE_SCHEMA)
         try:
             data = json.loads(raw)
+            if data.get("invalid"):
+                raise LLMNonsenseInputError(NONSENSE_MESSAGE)
             return TranslatedExperience(position=data["position"], description=data["description"])
         except (json.JSONDecodeError, KeyError) as exc:
             raise LLMProviderError("El proveedor de IA devolvió una respuesta inválida") from exc
@@ -79,6 +87,8 @@ class GeminiAdapter(LLMAdapter):
         raw = await self._generate(prompt, response_schema=generate_cv_prompt.RESPONSE_SCHEMA)
         try:
             data = json.loads(raw)
+            if data.get("invalid"):
+                raise LLMNonsenseInputError(NONSENSE_MESSAGE)
             return GeneratedCvDraft(
                 bio=data.get("bio"),
                 workExperiences=data.get("workExperiences", []),
@@ -93,4 +103,7 @@ class GeminiAdapter(LLMAdapter):
     async def generate_text(self, field: str, context: str, language: str) -> str:
         prompt = generate_text_prompt.build_prompt(field, context, language)
         result = await self._generate(prompt)
-        return result.strip()
+        result = result.strip()
+        if result == NONSENSE_SENTINEL:
+            raise LLMNonsenseInputError(NONSENSE_MESSAGE)
+        return result

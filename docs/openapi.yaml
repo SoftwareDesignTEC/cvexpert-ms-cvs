@@ -183,7 +183,10 @@ paths:
     post:
       tags: [ai]
       summary: Expande la descripción de una experiencia laboral con IA
-      description: Sin estado; no requiere que el CV esté guardado.
+      description: >
+        Sin estado; no requiere que el CV esté guardado. Si el texto no
+        tiene sentido (irrelevante, ilegible, vacío de contenido real),
+        responde 400 en vez de inventar una descripción.
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"
@@ -209,7 +212,10 @@ paths:
     post:
       tags: [ai]
       summary: Traduce una experiencia no laboral con IA
-      description: Sin estado; no requiere que el CV esté guardado.
+      description: >
+        Sin estado; no requiere que el CV esté guardado. Si el texto no
+        tiene sentido (irrelevante, ilegible, vacío de contenido real),
+        responde 400 en vez de inventar una traducción.
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"
@@ -238,7 +244,9 @@ paths:
       description: >
         Sin estado y sin guardar nada: el cliente recibe el texto sugerido,
         lo muestra para revisión y recién lo persiste cuando el usuario
-        guarda el CV por el flujo normal (POST/PUT /cvs).
+        guarda el CV por el flujo normal (POST/PUT /cvs). Si el contexto
+        no tiene sentido (irrelevante, ilegible, vacío de contenido real),
+        responde 400 en vez de inventar un texto.
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"
@@ -277,7 +285,9 @@ paths:
         usuario la corrija en el editor en vez de perder la fila. Solo se
         descarta una fila cuando falta un dato que no se puede completar
         con un valor por defecto razonable (ej. una experiencia type
-        "formal" sin company).
+        "formal" sin company). Si el relato completo no tiene sentido
+        (irrelevante, ilegible, vacío de contenido real), responde 400 y
+        no crea ningún CV.
       parameters:
         - $ref: "#/components/parameters/XUserId"
         - $ref: "#/components/parameters/XUserEmail"
