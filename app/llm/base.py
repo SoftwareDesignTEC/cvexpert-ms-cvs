@@ -34,6 +34,25 @@ class LLMProviderError(LLMError):
     pass
 
 
+class LLMNonsenseInputError(LLMError):
+    """El texto que mandó el usuario no tiene sentido; el adaptador se niega a transformarlo."""
+
+
+NONSENSE_SENTINEL = "###SIN_SENTIDO###"
+
+NONSENSE_MESSAGE = (
+    "El texto no parece tener sentido para generar contenido de currículum. "
+    "Revisá lo que escribiste e intentá de nuevo."
+)
+
+NONSENSE_INSTRUCTION = (
+    f"Si el texto de entrada no tiene sentido, está vacío de contenido real, es ilegible "
+    f"o no tiene relación alguna con un currículum (por ejemplo, caracteres al azar, o un "
+    f"tema completamente ajeno), no lo transformes: responde únicamente con {NONSENSE_SENTINEL} "
+    "y nada más."
+)
+
+
 class LLMAdapter(ABC):
     @abstractmethod
     async def expand_experience(

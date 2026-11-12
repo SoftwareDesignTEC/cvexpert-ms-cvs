@@ -79,6 +79,10 @@ RESPONSE_SCHEMA = {
                 "required": ["name", "issuer"],
             },
         },
+        "invalid": {
+            "type": "boolean",
+            "description": "true si el relato no tiene sentido o no describe una trayectoria real.",
+        },
     },
     "required": ["workExperiences", "education", "skills", "languages", "certifications"],
 }
@@ -96,6 +100,8 @@ def build_prompt(free_text: str, language: str) -> str:
         "de cada experiencia laboral debe ser 'formal' si fue un empleo con una empresa, "
         "'freelance' si fue trabajo independiente, 'volunteer' si fue voluntariado, "
         "'school-project' si fue un proyecto académico, o 'informal' en cualquier otro caso. "
-        "Responde únicamente con el JSON que cumpla el esquema indicado.\n\n"
+        "Si el relato no tiene sentido, está vacío de contenido real, es ilegible o no "
+        "describe en absoluto la trayectoria de una persona, responde con invalid=true y "
+        "las listas vacías. Responde únicamente con el JSON que cumpla el esquema indicado.\n\n"
         f"Relato de la persona:\n{free_text}"
     )

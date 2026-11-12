@@ -2,7 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.events.factory import get_event_publisher
-from app.llm.base import GeneratedCvDraft, LLMAdapter, LLMTimeoutError, TranslatedExperience
+from app.llm.base import (
+    GeneratedCvDraft,
+    LLMAdapter,
+    LLMNonsenseInputError,
+    LLMTimeoutError,
+    TranslatedExperience,
+)
 from app.llm.factory import get_llm_adapter
 from app.main import app
 from app.repositories.mongo import get_database
@@ -64,6 +70,22 @@ class TimeoutLLMAdapter(LLMAdapter):
         raise LLMTimeoutError("boom")
 
 
+class NonsenseLLMAdapter(LLMAdapter):
+    async def expand_experience(self, company, position, description, type, language) -> str:
+        raise LLMNonsenseInputError("no tiene sentido")
+
+    async def translate_experience(
+        self, type, position, description, language, organization=None
+    ) -> TranslatedExperience:
+        raise LLMNonsenseInputError("no tiene sentido")
+
+    async def generate_cv_draft(self, free_text, language) -> GeneratedCvDraft:
+        raise LLMNonsenseInputError("no tiene sentido")
+
+    async def generate_text(self, field, context, language) -> str:
+        raise LLMNonsenseInputError("no tiene sentido")
+
+
 @pytest.fixture
 def client():
     db = FakeDatabase({"templates": [dict(t) for t in TEMPLATES]})
@@ -95,6 +117,36 @@ def test_translate_experience(client):
 def test_expand_experience_requires_auth(client):
     response = client.post("/cvs/ai/expand-experience", json=EXPAND_BODY)
     assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/cvs/ai/expand-experience", EXPAND_BODY),
+        ("/cvs/ai/translate-experience", TRANSLATE_BODY),
+        ("/cvs/ai/generate-text", {"field": "profileBio", "context": "asdkjaskdj", "language": "es"}),
+        (
+            "/cvs/ai/generate-cv",
+            {"fullName": "Ana", "freeText": "asdkjaskdj", "language": "es"},
+        ),
+    ],
+)
+def test_nonsense_input_maps_to_400(path, body):
+    app.dependency_overrides[get_llm_adapter] = lambda: NonsenseLLMAdapter()
+    app.dependency_overrides[get_database] = lambda: FakeDatabase(
+        {"templates": [dict(t) for t in TEMPLATES]}
+    )
+    app.dependency_overrides[get_event_publisher] = lambda: FakeEventPublisher()
+    with TestClient(app) as test_client:
+        response = test_client.post(path, headers=AUTH_HEADERS, json=body)
+    app.dependency_overrides.pop(get_llm_adapter, None)
+    app.dependency_overrides.pop(get_database, None)
+    app.dependency_overrides.pop(get_event_publisher, None)
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["statusCode"] == 400
+    assert body["message"]
 
 
 def test_llm_timeout_maps_to_503_without_leaking_provider_details():

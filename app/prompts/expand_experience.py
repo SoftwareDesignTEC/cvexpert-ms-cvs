@@ -1,3 +1,5 @@
+from app.llm.base import NONSENSE_INSTRUCTION
+
 LANGUAGE_NAMES = {"es": "español", "en": "English"}
 
 
@@ -8,7 +10,7 @@ def build_prompt(company: str, position: str, description: str, type: str, langu
         f"descripción de experiencia laboral para que sea más detallada y profesional, "
         f"escrita en {language_name}. No inventes logros ni cifras que no estén "
         "implícitos en el texto original. Responde solo con la descripción expandida, "
-        "sin comillas ni explicaciones adicionales.\n\n"
+        f"sin comillas ni explicaciones adicionales. {NONSENSE_INSTRUCTION}\n\n"
         f"Puesto: {position}\n"
         f"Empresa: {company}\n"
         f"Tipo de experiencia: {type}\n"
