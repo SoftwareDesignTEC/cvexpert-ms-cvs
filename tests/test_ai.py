@@ -211,6 +211,44 @@ def test_generate_cv_defaults_title_and_template_when_omitted(client):
     assert created["title"].startswith("CV generado el ")
 
 
+def test_generate_cv_result_can_be_resaved_via_put_unchanged(client):
+    draft = GeneratedCvDraft(
+        bio="Bio",
+        workExperiences=[
+            {
+                "company": "Pulpería La Esquina",
+                "position": "Cajero",
+                "description": "Atención al cliente y cobros",
+                "type": "formal",
+                # sin "current": el modelo no siempre lo manda
+            }
+        ],
+        education=[{"institution": "TEC", "degree": "Ingeniería", "field": "Software"}],
+        skills=[{"name": "Excel", "level": "advanced"}],  # sin category
+        languages=[{"name": "Inglés", "level": "advanced"}],
+        certifications=[],
+    )
+    client.app.dependency_overrides[get_llm_adapter] = lambda: FakeLLMAdapter(cv_draft=draft)
+
+    body = {
+        "fullName": "Ana Perez",
+        "freeText": "irrelevante, el adaptador falso ignora esto",
+        "language": "es",
+    }
+    created_response = client.post("/cvs/ai/generate-cv", headers=AUTH_HEADERS, json=body)
+    assert created_response.status_code == 201
+    created = created_response.json()
+
+    for experience in created["workExperiences"]:
+        assert isinstance(experience["current"], bool)
+    for skill in created["skills"]:
+        assert isinstance(skill.get("category"), str) and skill["category"]
+
+    resave_response = client.put(f"/cvs/{created['id']}", headers=AUTH_HEADERS, json=created)
+    assert resave_response.status_code == 200
+    assert resave_response.json()["id"] == created["id"]
+
+
 def test_generate_cv_requires_auth(client):
     response = client.post(
         "/cvs/ai/generate-cv",
