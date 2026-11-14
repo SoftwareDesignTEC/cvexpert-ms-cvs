@@ -1,5 +1,6 @@
 from app.events.base import EventPublisher
 from app.llm.base import GeneratedCvDraft, LLMAdapter, TranslatedExperience
+from app.storage.base import PhotoStorage
 
 
 class FakeLLMAdapter(LLMAdapter):
@@ -40,3 +41,14 @@ class FakeEventPublisher(EventPublisher):
 
     async def publish(self, *, subject: str, message_id: str, body: dict) -> None:
         self.published.append({"subject": subject, "message_id": message_id, "body": body})
+
+
+class FakePhotoStorage(PhotoStorage):
+    """Implementación falsa de PhotoStorage para pruebas. Nunca llama a Azure."""
+
+    def __init__(self) -> None:
+        self.uploaded: list[dict] = []
+
+    async def upload(self, *, content: bytes, content_type: str, extension: str) -> str:
+        self.uploaded.append({"content": content, "content_type": content_type, "extension": extension})
+        return f"https://fake.blob.core.windows.net/cv-photos/fake-{len(self.uploaded)}.{extension}"

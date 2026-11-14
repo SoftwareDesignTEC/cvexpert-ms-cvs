@@ -168,7 +168,7 @@ class ExpandExperienceRequest(BaseModel):
     position: str
     description: str
     type: WorkExperienceType
-    language: ResponseLanguage
+    language: ResponseLanguage = "es"
 
 
 class ExpandExperienceResponse(BaseModel):
@@ -180,7 +180,7 @@ class TranslateExperienceRequest(BaseModel):
     position: str
     organization: str | None = None
     description: str
-    language: ResponseLanguage
+    language: ResponseLanguage = "es"
 
 
 class TranslateExperienceResponse(BaseModel):
@@ -194,7 +194,7 @@ class GenerateCvRequest(BaseModel):
     fullName: str
     phone: str | None = None
     freeText: str
-    language: ResponseLanguage
+    language: ResponseLanguage = "es"
 
 
 GenerateTextField = Literal["profileBio", "experienceDescription"]
@@ -203,8 +203,12 @@ GenerateTextField = Literal["profileBio", "experienceDescription"]
 class GenerateTextRequest(BaseModel):
     field: GenerateTextField
     context: str
-    language: ResponseLanguage
+    language: ResponseLanguage = "es"
 
 
 class GenerateTextResponse(BaseModel):
     text: str
+
+
+class PhotoUploadResponse(BaseModel):
+    url: str

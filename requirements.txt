@@ -6,3 +6,5 @@ pydantic
 pydantic-settings
 httpx
 azure-servicebus
+azure-storage-blob
+python-multipart

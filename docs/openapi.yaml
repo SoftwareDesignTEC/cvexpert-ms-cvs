@@ -130,6 +130,52 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /cvs/photos:
+    post:
+      tags: [cvs]
+      summary: Sube la foto de perfil para un CV y devuelve su URL pública
+      description: >
+        No está atado a un id de CV: el usuario elige la foto antes de que
+        el CV exista. El archivo se guarda en Azure Blob Storage, en un
+        contenedor con lectura anónima a nivel de blob (sin firma, sin
+        vencimiento) — la URL que se devuelve es pública y permanente, para
+        que se pueda usar directo en un <img>, en el renderizador de
+        Android y en el generador de PDF sin encabezados de autenticación.
+        El nombre del archivo en el storage es un UUID aleatorio, nunca el
+        id del usuario ni el del CV. personalInfo.photoUrl acepta tanto
+        esta URL como, por compatibilidad con CVs viejos, un data URL
+        embebido; no hay migración automática entre ambas formas.
+      parameters:
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserEmail"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Imagen a subir. image/jpeg, image/png o image/webp. Máximo 5 MB.
+      responses:
+        "201":
+          description: Archivo subido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+
   /templates:
     get:
       tags: [templates]
@@ -357,6 +403,18 @@ components:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: No existe o no pertenece al usuario autenticado
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PayloadTooLarge:
+      description: El archivo supera el tamaño máximo permitido
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnsupportedMediaType:
+      description: El tipo de archivo no está soportado
       content:
         application/json:
           schema:
@@ -817,7 +875,7 @@ components:
 
     ExpandExperienceRequest:
       type: object
-      required: [company, position, description, type, language]
+      required: [company, position, description, type]
       properties:
         company:
           type: string
@@ -830,6 +888,7 @@ components:
         language:
           type: string
           enum: [es, en]
+          description: Opcional. Por defecto "es".
     ExpandExperienceResponse:
       type: object
       required: [description]
@@ -839,7 +898,7 @@ components:
 
     TranslateExperienceRequest:
       type: object
-      required: [type, position, description, language]
+      required: [type, position, description]
       properties:
         type:
           $ref: "#/components/schemas/NonLaborExperienceType"
@@ -852,6 +911,7 @@ components:
         language:
           type: string
           enum: [es, en]
+          description: Opcional. Por defecto "es".
     TranslateExperienceResponse:
       type: object
       required: [position, description]
@@ -868,7 +928,7 @@ components:
 
     GenerateTextRequest:
       type: object
-      required: [field, context, language]
+      required: [field, context]
       properties:
         field:
           $ref: "#/components/schemas/GenerateTextField"
@@ -882,6 +942,7 @@ components:
         language:
           type: string
           enum: [es, en]
+          description: Opcional. Por defecto "es".
     GenerateTextResponse:
       type: object
       required: [text]
@@ -889,9 +950,17 @@ components:
         text:
           type: string
 
+    PhotoUploadResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: URL pública y permanente del archivo subido.
+
     GenerateCvRequest:
       type: object
-      required: [fullName, freeText, language]
+      required: [fullName, freeText]
       properties:
         title:
           type: string
@@ -909,3 +978,4 @@ components:
         language:
           type: string
           enum: [es, en]
+          description: Opcional. Por defecto "es".

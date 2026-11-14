@@ -119,6 +119,18 @@ def test_expand_experience_requires_auth(client):
     assert response.status_code == 401
 
 
+def test_expand_experience_defaults_language_to_es_when_omitted(client):
+    body = {k: v for k, v in EXPAND_BODY.items() if k != "language"}
+    response = client.post("/cvs/ai/expand-experience", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 200
+
+
+def test_generate_text_defaults_language_to_es_when_omitted(client):
+    body = {"field": "profileBio", "context": "contexto"}
+    response = client.post("/cvs/ai/generate-text", headers=AUTH_HEADERS, json=body)
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize(
     ("path", "body"),
     [
