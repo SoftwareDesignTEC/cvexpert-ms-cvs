@@ -23,6 +23,7 @@ from app.llm.base import (
     LLMRateLimitError,
     LLMTimeoutError,
 )
+from app.storage.base import PhotoStorageError
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,12 @@ async def handle_file_too_large(request: Request, exc: FileTooLargeError) -> JSO
 @app.exception_handler(UnsupportedFileTypeError)
 async def handle_unsupported_file_type(request: Request, exc: UnsupportedFileTypeError) -> JSONResponse:
     return _error_response(415, "UnsupportedMediaType", str(exc))
+
+
+@app.exception_handler(PhotoStorageError)
+async def handle_photo_storage_error(request: Request, exc: PhotoStorageError) -> JSONResponse:
+    logger.error("Error de storage de fotos en %s %s", request.method, request.url.path, exc_info=exc)
+    return _error_response(502, "BadGateway", "No se pudo subir el archivo, intenta de nuevo.")
 
 
 @app.exception_handler(RequestValidationError)

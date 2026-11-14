@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.storage.base import PhotoStorage, PhotoStorageError
 from app.storage.factory import get_photo_storage
 from tests.fakes import FakePhotoStorage
 
@@ -64,6 +65,27 @@ def test_upload_photo_rejects_file_too_large(client):
     )
     assert response.status_code == 413
     assert response.json()["error"] == "PayloadTooLarge"
+
+
+class FailingPhotoStorage(PhotoStorage):
+    async def upload(self, *, content: bytes, content_type: str, extension: str) -> str:
+        raise PhotoStorageError("boom")
+
+
+def test_upload_photo_storage_failure_maps_to_502_distinct_from_500():
+    app.dependency_overrides[get_photo_storage] = lambda: FailingPhotoStorage()
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/cvs/photos",
+            headers=AUTH_HEADERS,
+            files={"file": ("foto.jpg", io.BytesIO(b"contenido"), "image/jpeg")},
+        )
+    app.dependency_overrides.pop(get_photo_storage, None)
+
+    assert response.status_code == 502
+    body = response.json()
+    assert body["error"] == "BadGateway"
+    assert "boom" not in body["message"]
 
 
 def test_upload_photo_accepts_png_and_webp(client):
