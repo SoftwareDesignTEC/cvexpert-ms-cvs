@@ -7,9 +7,14 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.api.routers import ai, cvs, templates
+from app.api.routers import ai, cvs, photos, templates
 from app.config import settings
-from app.domain.errors import NotFoundError, ValidationError
+from app.domain.errors import (
+    FileTooLargeError,
+    NotFoundError,
+    UnsupportedFileTypeError,
+    ValidationError,
+)
 from app.domain.models import Error
 from app.llm.base import (
     LLMError,
@@ -26,6 +31,7 @@ app = FastAPI(title="cvexpert-ms-cvs")
 app.include_router(cvs.router)
 app.include_router(templates.router)
 app.include_router(ai.router)
+app.include_router(photos.router)
 
 
 @app.get("/health")
@@ -106,6 +112,16 @@ async def handle_not_found(request: Request, exc: NotFoundError) -> JSONResponse
 @app.exception_handler(ValidationError)
 async def handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
     return _error_response(400, "BadRequest", "Solicitud inválida.", errors=exc.errors)
+
+
+@app.exception_handler(FileTooLargeError)
+async def handle_file_too_large(request: Request, exc: FileTooLargeError) -> JSONResponse:
+    return _error_response(413, "PayloadTooLarge", str(exc))
+
+
+@app.exception_handler(UnsupportedFileTypeError)
+async def handle_unsupported_file_type(request: Request, exc: UnsupportedFileTypeError) -> JSONResponse:
+    return _error_response(415, "UnsupportedMediaType", str(exc))
 
 
 @app.exception_handler(RequestValidationError)

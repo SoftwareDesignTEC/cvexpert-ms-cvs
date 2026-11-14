@@ -6,3 +6,11 @@ class ValidationError(Exception):
     def __init__(self, errors: dict[str, str]):
         self.errors = errors
         super().__init__(str(errors))
+
+
+class FileTooLargeError(Exception):
+    pass
+
+
+class UnsupportedFileTypeError(Exception):
+    pass

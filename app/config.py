@@ -16,5 +16,8 @@ class Settings(BaseSettings):
 
     apim_cert_thumbprints: str = ""
 
+    azure_storage_connection_string: str | None = None
+    azure_storage_container: str = "cv-photos"
+
 
 settings = Settings()
